@@ -1,0 +1,192 @@
+.page { padding: 40px 0 80px; }
+.pageTitle { font-size: 1.8rem; font-weight: 800; color: #1a1a2e; margin-bottom: 28px; }
+
+.center { text-align: center; padding: 100px 20px; }
+.centerIcon { font-size: 3.5rem; margin-bottom: 16px; }
+.center h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 24px; }
+
+/* Filter tabs */
+.filterTabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 28px;
+  background: #f3f4f6; padding: 6px; border-radius: 16px;
+  width: fit-content;
+}
+.filterTab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 12px; border: none;
+  background: transparent; font-size: 0.82rem; font-weight: 600;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+  font-family: 'Poppins', sans-serif;
+}
+.filterTab:hover { color: #7C3AED; }
+.filterTabActive { background: white; color: #7C3AED; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.filterCount {
+  background: #e5e7eb; color: #6b7280;
+  padding: 1px 7px; border-radius: 50px; font-size: 0.7rem;
+}
+.filterTabActive .filterCount { background: #ede9fe; color: #7C3AED; }
+
+/* Order list */
+.orderList { display: flex; flex-direction: column; gap: 16px; }
+
+.orderCard {
+  background: white; border-radius: 20px; padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  border: 2px solid #f3f4f6; transition: border-color 0.2s;
+}
+.orderCard:hover { border-color: #ede9fe; }
+
+.orderHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.orderMeta { display: flex; gap: 12px; align-items: center; }
+.orderId { font-size: 0.78rem; font-weight: 700; color: #7C3AED; font-family: monospace; }
+.orderDate { font-size: 0.78rem; color: #9ca3af; }
+.statusBadge {
+  padding: 5px 14px; border-radius: 50px;
+  font-size: 0.78rem; font-weight: 700;
+}
+
+.orderBody { display: flex; gap: 16px; margin-bottom: 16px; }
+.orderImg {
+  width: 80px; height: 60px; border-radius: 10px;
+  object-fit: cover; flex-shrink: 0;
+}
+.orderInfo { flex: 1; }
+.orderInfo h4 { font-size: 0.95rem; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.orderPrice { font-size: 0.95rem; font-weight: 700; color: #7C3AED; margin-bottom: 4px; }
+.orderMeetup { font-size: 0.78rem; color: #6b7280; }
+.orderResi { font-size: 0.78rem; color: #059669; }
+.orderCancel { font-size: 0.78rem; color: #dc2626; }
+.orderParty { font-size: 0.78rem; color: #6b7280; margin-top: 4px; }
+
+/* Actions */
+.orderActions { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+
+.btnPrimary {
+  padding: 10px 20px;
+  background: linear-gradient(135deg,#7C3AED,#2563EB);
+  color: white; border: none; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; font-family: 'Poppins', sans-serif;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btnPrimary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+
+.btnGreen {
+  padding: 10px 20px;
+  background: linear-gradient(135deg,#10B981,#059669);
+  color: white; border: none; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; font-family: 'Poppins', sans-serif;
+}
+.btnGreen:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+
+.btnRed {
+  padding: 10px 20px;
+  background: #fee2e2; color: #dc2626;
+  border: none; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; font-family: 'Poppins', sans-serif;
+}
+.btnRed:hover { background: #fecaca; }
+
+.btnOutline {
+  padding: 10px 20px;
+  background: white; color: #7C3AED;
+  border: 2px solid #7C3AED; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; font-family: 'Poppins', sans-serif;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btnOutline:hover { background: #faf5ff; }
+
+/* Reject form */
+.rejectForm {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: #fef2f2; padding: 12px; border-radius: 12px; width: 100%;
+}
+.rejectForm input {
+  flex: 1; padding: 8px 12px; border: 1px solid #fecaca;
+  border-radius: 8px; font-size: 0.82rem; font-family: 'Poppins', sans-serif;
+  outline: none; min-width: 160px;
+}
+
+/* Ship form */
+.shipForm {
+  background: #f0fdf4; padding: 16px; border-radius: 12px;
+  width: 100%; display: flex; flex-direction: column; gap: 10px;
+}
+.shipMethodRow { display: flex; gap: 8px; }
+.shipMethodBtn {
+  flex: 1; padding: 8px; border: 2px solid #e5e7eb; border-radius: 10px;
+  background: white; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.shipMethodActive { border-color: #10B981; background: #d1fae5; color: #065f46; }
+.shipForm input {
+  padding: 10px 12px; border: 1px solid #bbf7d0; border-radius: 10px;
+  font-size: 0.85rem; font-family: 'Poppins', sans-serif; outline: none;
+}
+.shipActions { display: flex; gap: 8px; }
+
+/* Empty */
+.empty { text-align: center; padding: 80px 20px; }
+.emptyIcon { font-size: 4rem; margin-bottom: 16px; }
+.empty h3 { font-size: 1.2rem; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+.empty p  { color: #6b7280; margin-bottom: 24px; }
+
+@media (max-width: 600px) {
+  .filterTabs { width: 100%; overflow-x: auto; }
+  .orderBody { flex-direction: column; }
+}
+
+/* Escrow info banner */
+.escrowInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.escrowIcon { font-size: 1.4rem; flex-shrink: 0; }
+.escrowText { display: flex; flex-direction: column; gap: 2px; }
+.escrowText strong { font-size: 0.85rem; color: #1e40af; }
+.escrowText span   { font-size: 0.75rem; color: #3b82f6; }
+
+/* Fund breakdown (seller completed) */
+.fundBreakdown {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.fundRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.83rem;
+  color: #374151;
+  padding: 4px 0;
+}
+.fundFee { color: #dc2626; }
+.fundDivider { height: 1px; background: #bbf7d0; margin: 6px 0; }
+.fundTotal { font-size: 0.9rem; font-weight: 700; color: #065f46; }
+.fundTotal strong { color: #059669; font-size: 1rem; }
+
+/* Confirm box */
+.confirmBox {
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 16px;
+  width: 100%;
+}
+.confirmBox p { font-size: 0.88rem; color: #374151; margin-bottom: 6px; font-weight: 600; }
+.confirmNote { font-size: 0.78rem !important; color: #6b7280 !important; font-weight: 400 !important; }
+.confirmActions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
