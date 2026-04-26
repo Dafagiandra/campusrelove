@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useProducts } from '../../context/ProductContext'
 import { useOrders } from '../../context/OrderContext'
+import { useCarrier, CARRY_STATUS } from '../../context/CarrierContext'
 import styles from './AdminDashboard.module.css'
 
 const getStoredUsers = () => {
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
           getUnreadCount, getUserNotifs, markNotifRead,
           getEscrowBalance, getAdminWalletBalance, getAdminWalletHistory,
           PLATFORM_FEE_PERCENT } = useOrders()
+  const { getAllCarryOrders, CARRIER_FEE_PERCENT, getCarryEscrowBalance, getCarryEscrowHistory } = useCarrier()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [users] = useState(getStoredUsers())
@@ -36,20 +38,26 @@ export default function AdminDashboard() {
     navigate('/auth')   // ← redirect ke /auth setelah logout admin
   }
 
-  const buyers  = users.filter((u) => u.role === 'buyer')
-  const sellers = users.filter((u) => u.role === 'seller')
+  const buyers   = users.filter((u) => u.role === 'buyer')
+  const sellers  = users.filter((u) => u.role === 'seller')
+  const carriers = users.filter((u) => u.role === 'carrier')
   const allOrders = getAllOrders()
+  const allCarryOrders = getAllCarryOrders()
   const pendingOrders   = allOrders.filter(o => o.status === 'pending_payment')
   const deliveredOrders = allOrders.filter(o => o.status === 'delivered')
   const completedOrders = allOrders.filter(o => o.status === 'completed')
   const overdueOrders   = allOrders.filter(o => isOverdue(o))
+  const activeCarryOrders = allCarryOrders.filter(o => !['completed','cancelled'].includes(o.status))
   const adminUnread = getUnreadCount('admin1')
   const adminNotifs = getUserNotifs('admin1').slice(0, 10)
 
   // Dana
   const escrowBalance    = getEscrowBalance()
+  const carryEscrow      = getCarryEscrowBalance()
+  const totalEscrow      = escrowBalance + carryEscrow
   const adminWalletBal   = getAdminWalletBalance()
   const adminWalletHist  = getAdminWalletHistory().slice(0, 10)
+  const carryEscrowHist  = getCarryEscrowHistory()
   const totalTransacted  = completedOrders.reduce((s, o) => s + (o.price || 0), 0)
 
   const STATUS_LABEL = {
@@ -66,6 +74,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: '📊 Overview' },
     { id: 'dana',     label: `💰 Dana${escrowBalance > 0 ? ` (${(escrowBalance/1000).toFixed(0)}K)` : ''}` },
     { id: 'orders',   label: `📋 Pesanan${pendingOrders.length > 0 ? ` (${pendingOrders.length})` : ''}` },
+    { id: 'carry',    label: `🚚 Jasa Angkut${activeCarryOrders.length > 0 ? ` (${activeCarryOrders.length})` : ''}` },
     { id: 'notifs',   label: `🔔 Notifikasi${adminUnread > 0 ? ` (${adminUnread})` : ''}` },
     { id: 'users',    label: '👥 Pengguna' },
     { id: 'products', label: '📦 Produk' },
@@ -113,7 +122,7 @@ export default function AdminDashboard() {
               <StatCard icon="👥" label="Total Pengguna"   value={users.length}       color="#7C3AED" />
               <StatCard icon="🛍️" label="Pembeli"          value={buyers.length}      color="#2563EB" />
               <StatCard icon="📦" label="Penjual"          value={sellers.length}     color="#10B981" />
-              <StatCard icon="🏷️" label="Total Produk"     value={allProducts.length} color="#F59E0B" />
+              <StatCard icon="🚚" label="Carrier"          value={carriers.length}    color="#F59E0B" />
               <StatCard icon="📋" label="Total Pesanan"    value={allOrders.length}   color="#EF4444" />
               <StatCard icon="⏳" label="Menunggu Validasi" value={pendingOrders.length} color="#EC4899" />
             </div>
@@ -123,15 +132,17 @@ export default function AdminDashboard() {
               <div className={styles.danaCard} style={{ '--c': '#2563EB' }}>
                 <div className={styles.danaCardIcon}>🔒</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Dana di Escrow</span>
-                  <strong className={styles.danaCardValue}>Rp {escrowBalance.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Ditahan, belum cair</span>
+                  <span className={styles.danaCardLabel}>Total Escrow (Ditahan)</span>
+                  <strong className={styles.danaCardValue}>Rp {totalEscrow.toLocaleString('id-ID')}</strong>
+                  <span className={styles.danaCardSub}>
+                    Produk: Rp {escrowBalance.toLocaleString('id-ID')} · Carry: Rp {carryEscrow.toLocaleString('id-ID')}
+                  </span>
                 </div>
               </div>
               <div className={styles.danaCard} style={{ '--c': '#10B981' }}>
                 <div className={styles.danaCardIcon}>💰</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Komisi Platform ({PLATFORM_FEE_PERCENT}%)</span>
+                  <span className={styles.danaCardLabel}>Komisi Platform</span>
                   <strong className={styles.danaCardValue}>Rp {adminWalletBal.toLocaleString('id-ID')}</strong>
                   <span className={styles.danaCardSub}>Total terkumpul</span>
                 </div>
@@ -186,30 +197,41 @@ export default function AdminDashboard() {
               <div className={styles.danaCard} style={{ '--c': '#2563EB' }}>
                 <div className={styles.danaCardIcon}>🔒</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Dana di Escrow (Ditahan)</span>
+                  <span className={styles.danaCardLabel}>Escrow Produk (Ditahan)</span>
                   <strong className={styles.danaCardValue}>Rp {escrowBalance.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Dari {allOrders.filter(o => ['paid','processing','shipped'].includes(o.status)).length} pesanan aktif</span>
+                  <span className={styles.danaCardSub}>Dari {allOrders.filter(o => ['paid','processing','shipped'].includes(o.status)).length} pesanan produk aktif</span>
                 </div>
               </div>
               <div className={styles.danaCard} style={{ '--c': '#10B981' }}>
+                <div className={styles.danaCardIcon}>🚚</div>
+                <div className={styles.danaCardInfo}>
+                  <span className={styles.danaCardLabel}>Escrow Carry (Ditahan)</span>
+                  <strong className={styles.danaCardValue}>Rp {carryEscrow.toLocaleString('id-ID')}</strong>
+                  <span className={styles.danaCardSub}>Dari {allCarryOrders.filter(o => !['completed','cancelled'].includes(o.status)).length} pesanan jasa angkut aktif</span>
+                </div>
+              </div>
+              <div className={styles.danaCard} style={{ '--c': '#F59E0B' }}>
                 <div className={styles.danaCardIcon}>💰</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Saldo Komisi Admin ({PLATFORM_FEE_PERCENT}%)</span>
+                  <span className={styles.danaCardLabel}>Saldo Komisi Admin</span>
                   <strong className={styles.danaCardValue}>Rp {adminWalletBal.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Profit platform terkumpul</span>
+                  <span className={styles.danaCardSub}>Produk {PLATFORM_FEE_PERCENT}% + Carry {CARRIER_FEE_PERCENT}%</span>
                 </div>
               </div>
             </div>
 
             {/* Alur dana explanation */}
             <div className={styles.danaFlowCard}>
-              <h3>📊 Alur Dana CampusRelove</h3>
+              <h3>📊 Alur Dana — Prinsip Escrow CampusRelove</h3>
+
+              {/* Produk flow */}
+              <h4 style={{ fontSize:'0.88rem', color:'#7C3AED', marginBottom:12 }}>🛍️ Pesanan Produk</h4>
               <div className={styles.danaFlow}>
                 <div className={styles.danaFlowStep}>
                   <div className={styles.danaFlowIcon} style={{ background: '#FEF3C7', color: '#D97706' }}>💳</div>
                   <div className={styles.danaFlowText}>
                     <strong>1. Pembeli Bayar</strong>
-                    <span>Dana masuk ke Escrow Admin. Status: "Ditahan"</span>
+                    <span>Dana masuk Escrow Admin</span>
                   </div>
                 </div>
                 <div className={styles.danaFlowArrow}>→</div>
@@ -217,7 +239,7 @@ export default function AdminDashboard() {
                   <div className={styles.danaFlowIcon} style={{ background: '#DBEAFE', color: '#2563EB' }}>🔒</div>
                   <div className={styles.danaFlowText}>
                     <strong>2. Escrow Aktif</strong>
-                    <span>Dana aman, penjual proses & kirim barang</span>
+                    <span>Penjual proses & kirim</span>
                   </div>
                 </div>
                 <div className={styles.danaFlowArrow}>→</div>
@@ -225,45 +247,118 @@ export default function AdminDashboard() {
                   <div className={styles.danaFlowIcon} style={{ background: '#D1FAE5', color: '#059669' }}>✅</div>
                   <div className={styles.danaFlowText}>
                     <strong>3. Pembeli Konfirmasi</strong>
-                    <span>Klik "Pesanan Selesai" → dana otomatis dibagi</span>
+                    <span>Klik "Pesanan Selesai"</span>
                   </div>
                 </div>
                 <div className={styles.danaFlowArrow}>→</div>
                 <div className={styles.danaFlowStep}>
                   <div className={styles.danaFlowIcon} style={{ background: '#EDE9FE', color: '#7C3AED' }}>💸</div>
                   <div className={styles.danaFlowText}>
-                    <strong>4. Dana Cair Otomatis</strong>
-                    <span>Penjual ({100 - PLATFORM_FEE_PERCENT}%) + Admin ({PLATFORM_FEE_PERCENT}%)</span>
+                    <strong>4. Dana Cair</strong>
+                    <span>Penjual ({100-PLATFORM_FEE_PERCENT}%) + Admin ({PLATFORM_FEE_PERCENT}%)</span>
                   </div>
                 </div>
               </div>
 
+              {/* Carry flow */}
+              <h4 style={{ fontSize:'0.88rem', color:'#10B981', margin:'20px 0 12px' }}>🚚 Jasa Angkut (Relove-Carry)</h4>
+              <div className={styles.danaFlow}>
+                <div className={styles.danaFlowStep}>
+                  <div className={styles.danaFlowIcon} style={{ background: '#FEF3C7', color: '#D97706' }}>💳</div>
+                  <div className={styles.danaFlowText}>
+                    <strong>1. Pembeli Bayar Ongkir</strong>
+                    <span>Ongkir masuk Escrow Admin. Carrier saldo = Rp 0</span>
+                  </div>
+                </div>
+                <div className={styles.danaFlowArrow}>→</div>
+                <div className={styles.danaFlowStep}>
+                  <div className={styles.danaFlowIcon} style={{ background: '#DBEAFE', color: '#2563EB' }}>🚚</div>
+                  <div className={styles.danaFlowText}>
+                    <strong>2. Carrier Bekerja</strong>
+                    <span>Jemput → Muat → Antar → Tiba. Saldo masih Rp 0</span>
+                  </div>
+                </div>
+                <div className={styles.danaFlowArrow}>→</div>
+                <div className={styles.danaFlowStep}>
+                  <div className={styles.danaFlowIcon} style={{ background: '#D1FAE5', color: '#059669' }}>📸</div>
+                  <div className={styles.danaFlowText}>
+                    <strong>3. Upload Foto Bukti</strong>
+                    <span>Carrier upload foto → Pembeli bisa konfirmasi</span>
+                  </div>
+                </div>
+                <div className={styles.danaFlowArrow}>→</div>
+                <div className={styles.danaFlowStep}>
+                  <div className={styles.danaFlowIcon} style={{ background: '#EDE9FE', color: '#7C3AED' }}>💸</div>
+                  <div className={styles.danaFlowText}>
+                    <strong>4. Pembeli Konfirmasi → Cair</strong>
+                    <span>Carrier ({100-CARRIER_FEE_PERCENT}%) + Admin ({CARRIER_FEE_PERCENT}%)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Example table */}
               <div className={styles.danaExample}>
-                <h4>Contoh Transaksi Rp 100.000</h4>
+                <h4>Contoh: Ongkir Rp 50.000</h4>
                 <div className={styles.danaExampleTable}>
-                  <div className={styles.danaExRow + ' ' + styles.danaExHeader}>
+                  <div className={`${styles.danaExRow} ${styles.danaExHeader}`}>
                     <span>Kondisi</span>
-                    <span>Saldo Admin</span>
-                    <span>Saldo Penjual</span>
+                    <span>Escrow Admin</span>
+                    <span>Saldo Carrier</span>
                     <span>Keterangan</span>
                   </div>
                   <div className={styles.danaExRow}>
-                    <span>Baru Bayar</span>
-                    <span className={styles.danaExEscrow}>Rp 100.000 (Escrow)</span>
+                    <span>Baru Pesan</span>
+                    <span className={styles.danaExEscrow}>Rp 50.000 (Ditahan)</span>
                     <span>Rp 0</span>
-                    <span>Dana aman di tangan Admin</span>
+                    <span>Carrier belum terima apa-apa</span>
                   </div>
                   <div className={styles.danaExRow}>
-                    <span>Pesanan Selesai</span>
-                    <span className={styles.danaExProfit}>Rp {Math.round(100000 * PLATFORM_FEE_PERCENT / 100).toLocaleString('id-ID')} (komisi)</span>
-                    <span className={styles.danaExSeller}>Rp {(100000 - Math.round(100000 * PLATFORM_FEE_PERCENT / 100)).toLocaleString('id-ID')}</span>
-                    <span>Admin ambil {PLATFORM_FEE_PERCENT}%, sisanya cair ke Penjual</span>
+                    <span>Carrier Bekerja</span>
+                    <span className={styles.danaExEscrow}>Rp 50.000 (Masih Ditahan)</span>
+                    <span>Rp 0</span>
+                    <span>Saldo carrier tetap 0 selama proses</span>
+                  </div>
+                  <div className={styles.danaExRow}>
+                    <span>Pembeli Konfirmasi</span>
+                    <span className={styles.danaExProfit}>Rp {Math.round(50000 * CARRIER_FEE_PERCENT / 100).toLocaleString('id-ID')} (komisi)</span>
+                    <span className={styles.danaExSeller}>Rp {(50000 - Math.round(50000 * CARRIER_FEE_PERCENT / 100)).toLocaleString('id-ID')}</span>
+                    <span>Escrow cair otomatis ke carrier & admin</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Riwayat komisi */}
+            {/* Carry Escrow History */}
+            <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>🚚 Riwayat Escrow Jasa Angkut</h3>
+            {carryEscrowHist.length === 0 ? (
+              <div className={styles.emptyState}><span>🚚</span><p>Belum ada transaksi jasa angkut</p></div>
+            ) : (
+              <div className={styles.walletHistory}>
+                {carryEscrowHist.map(h => (
+                  <div key={h.id} className={styles.walletRow}>
+                    <div className={styles.walletIcon}>
+                      {h.type === 'hold' ? '🔒' : h.type === 'release' ? '💸' : '↩️'}
+                    </div>
+                    <div className={styles.walletInfo}>
+                      <strong>{h.itemDescription}</strong>
+                      <span>
+                        {h.type === 'hold'    && `Ditahan dari ${h.buyerName}`}
+                        {h.type === 'release' && `Dicairkan ke ${h.carrierName}`}
+                        {h.type === 'refund'  && `Dikembalikan ke ${h.buyerName}`}
+                      </span>
+                    </div>
+                    <div className={`${styles.walletAmount} ${h.type === 'hold' ? '' : h.type === 'release' ? styles.walletRelease : styles.walletRefund}`}>
+                      {h.type === 'hold' ? '+' : '−'}Rp {h.amount.toLocaleString('id-ID')}
+                    </div>
+                    <div className={styles.walletDate}>
+                      {new Date(h.createdAt).toLocaleDateString('id-ID', { day:'numeric', month:'short' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Product Komisi History */}
             <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>📜 Riwayat Komisi Platform</h3>
             {adminWalletHist.length === 0 ? (
               <div className={styles.emptyState}><span>💰</span><p>Belum ada komisi terkumpul</p></div>
@@ -271,10 +366,10 @@ export default function AdminDashboard() {
               <div className={styles.walletHistory}>
                 {adminWalletHist.map(h => (
                   <div key={h.id} className={styles.walletRow}>
-                    <div className={styles.walletIcon}>💰</div>
+                    <div className={styles.walletIcon}>{h.type === 'carry_fee' ? '🚚' : '💰'}</div>
                     <div className={styles.walletInfo}>
                       <strong>{h.productTitle}</strong>
-                      <span>Order #{h.orderId.slice(-8).toUpperCase()}</span>
+                      <span>{h.type === 'carry_fee' ? 'Komisi Jasa Angkut' : 'Komisi Produk'} · #{h.orderId.slice(-8).toUpperCase()}</span>
                     </div>
                     <div className={styles.walletAmount}>+Rp {h.amount.toLocaleString('id-ID')}</div>
                     <div className={styles.walletDate}>
@@ -342,6 +437,87 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Carry Orders Tab */}
+        {activeTab === 'carry' && (
+          <div>
+            <h3 className={styles.sectionTitle}>🚚 Semua Pesanan Jasa Angkut ({allCarryOrders.length})</h3>
+
+            {/* Carrier list */}
+            <div className={styles.carrierAdminList}>
+              <h4 style={{ fontSize:'0.9rem', fontWeight:700, color:'#1a1a2e', marginBottom:12 }}>
+                👤 Carrier Terdaftar ({carriers.length})
+              </h4>
+              {carriers.length === 0 ? (
+                <div className={styles.emptyState}><span>🚚</span><p>Belum ada carrier yang mendaftar</p></div>
+              ) : (
+                <div className={styles.carrierAdminGrid}>
+                  {carriers.map(c => {
+                    const busy = allCarryOrders.some(o => o.carrierId === c.id &&
+                      ['claimed','heading_to_seller','loading','in_transit','arrived'].includes(o.status))
+                    return (
+                      <div key={c.id} className={styles.carrierAdminCard}>
+                        <img src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`}
+                          alt={c.name} className={styles.carrierAdminAvatar} />
+                        <div className={styles.carrierAdminInfo}>
+                          <strong>{c.name}</strong>
+                          <span>{c.vehicleType || 'Motor'} · {c.serviceArea || '-'}</span>
+                          <span>⭐ {c.carrierRating || '–'} · {c.totalTrips || 0} trip</span>
+                        </div>
+                        <div className={styles.carrierAdminRight}>
+                          <span className={`${styles.carrierAdminStatus} ${busy ? styles.carrierBusy : styles.carrierFree}`}>
+                            {busy ? '🔴 Sibuk' : '🟢 Tersedia'}
+                          </span>
+                          <span className={styles.carrierAdminBalance}>
+                            Saldo: Rp {(c.balance || 0).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Carry orders list */}
+            <h4 style={{ fontSize:'0.9rem', fontWeight:700, color:'#1a1a2e', margin:'24px 0 12px' }}>
+              📋 Riwayat Pesanan Jasa Angkut
+            </h4>
+            {allCarryOrders.length === 0 ? (
+              <div className={styles.emptyState}><span>📭</span><p>Belum ada pesanan jasa angkut</p></div>
+            ) : (
+              <div className={styles.orderTable}>
+                {allCarryOrders.map(o => {
+                  const st = CARRY_STATUS[o.status] || CARRY_STATUS.available
+                  const netFee = Math.round((o.estimatedFee || 0) * (1 - (o.adminFeePercent || 10) / 100))
+                  return (
+                    <div key={o.carryOrderId} className={styles.orderRow}>
+                      <div className={styles.orderMeta}>
+                        <span className={styles.orderId}>#{o.carryOrderId.slice(-8).toUpperCase()}</span>
+                        <span className={styles.orderDate}>{new Date(o.createdAt).toLocaleDateString('id-ID')}</span>
+                      </div>
+                      <div className={styles.orderProduct}>
+                        <strong>{o.itemDescription}</strong>
+                        <span>Pembeli: {o.buyerName}</span>
+                        <span>{o.pickupPoint} → {o.dropoffPoint}</span>
+                        {o.carrierName && <span>Carrier: {o.carrierName}</span>}
+                        <span>Fee: Rp {(o.estimatedFee||0).toLocaleString('id-ID')} → Carrier Rp {netFee.toLocaleString('id-ID')}</span>
+                      </div>
+                      <span className={styles.orderStatus} style={{ color: st.color, background: st.bg }}>
+                        {st.label}
+                      </span>
+                      <div className={styles.orderAdminActions}>
+                        {o.status === 'completed' && (
+                          <span className={styles.autoReleasedBadge}>✅ Komisi Cair</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Notifications Tab */}
         {activeTab === 'notifs' && (
           <div>
@@ -396,8 +572,8 @@ export default function AdminDashboard() {
                       <span>{u.name}</span>
                     </div>
                     <span className={styles.tableEmail}>{u.email}</span>
-                    <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : styles.roleBuyer}`}>
-                      {u.role === 'seller' ? '📦 Penjual' : '🛍️ Pembeli'}
+                    <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : u.role === 'carrier' ? styles.roleCarrier : styles.roleBuyer}`}>
+                      {u.role === 'seller' ? '📦 Penjual' : u.role === 'carrier' ? '🚚 Carrier' : '🛍️ Pembeli'}
                     </span>
                     <span className={styles.tableUni}>{u.university || '-'}</span>
                     <span className={styles.tableDate}>{u.joinDate}</span>

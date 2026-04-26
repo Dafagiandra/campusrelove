@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useCarrier, CARRY_STATUS } from '../../context/CarrierContext'
+import { useCarrier, CARRY_STATUS, CARRIER_FEE_PERCENT } from '../../context/CarrierContext'
 import styles from './CarrierDashboard.module.css'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -241,8 +241,11 @@ function ActiveTaskCard({ order, onUpdateStatus, onUploadProof }) {
 
 // ─── History Card ─────────────────────────────────────────────────────────────
 function HistoryCard({ order }) {
-  const feePercent = order.adminFeePercent ?? 10
-  const netFee = Math.round(order.estimatedFee * (1 - feePercent / 100))
+  const feePercent = order.adminFeePercent ?? CARRIER_FEE_PERCENT
+  const fee        = order.estimatedFee || 0
+  // Gunakan carrierNet yang tersimpan, atau hitung ulang
+  const netFee     = order.carrierNet ?? Math.round(fee * (1 - feePercent / 100))
+  const adminCut   = order.adminCut   ?? Math.round(fee * feePercent / 100)
 
   return (
     <div className={styles.histCard}>
@@ -264,6 +267,11 @@ function HistoryCard({ order }) {
           <div className={styles.histEarning}>
             <span>Komisi diterima:</span>
             <strong>+Rp {netFee.toLocaleString('id-ID')}</strong>
+          </div>
+        )}
+        {order.status === 'completed' && fee > 0 && (
+          <div className={styles.histFeeBreak}>
+            <span>Ongkir Rp {fee.toLocaleString('id-ID')} − admin {feePercent}% (Rp {adminCut.toLocaleString('id-ID')})</span>
           </div>
         )}
         {order.carrierRating && (
@@ -331,7 +339,11 @@ export default function CarrierDashboard() {
 
   const totalEarned = historyOrders
     .filter(o => o.status === 'completed')
-    .reduce((sum, o) => sum + Math.round(o.estimatedFee * (1 - (o.adminFeePercent ?? 10) / 100)), 0)
+    .reduce((sum, o) => {
+      const feeP = o.adminFeePercent ?? CARRIER_FEE_PERCENT
+      const fee  = o.estimatedFee || 0
+      return sum + (o.carrierNet ?? Math.round(fee * (1 - feeP / 100)))
+    }, 0)
 
   const tabs = [
     { id: 'pool',    label: `🟢 Tugas Tersedia (${availableOrders.length})` },
@@ -512,7 +524,9 @@ export default function CarrierDashboard() {
                 {historyOrders
                   .filter(o => o.status === 'completed')
                   .map(o => {
-                    const net = Math.round(o.estimatedFee * (1 - (o.adminFeePercent ?? 10) / 100))
+                    const feeP = o.adminFeePercent ?? CARRIER_FEE_PERCENT
+                    const fee  = o.estimatedFee || 0
+                    const net  = o.carrierNet ?? Math.round(fee * (1 - feeP / 100))
                     return (
                       <div key={o.carryOrderId} className={styles.walletHistRow}>
                         <div className={styles.walletHistIcon}>✅</div>

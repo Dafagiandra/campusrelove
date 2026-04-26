@@ -389,3 +389,9 @@
   .walletCards { grid-template-columns: 1fr; }
   .progressSteps::before { display: none; }
 }
+
+.histFeeBreak {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}
