@@ -35,13 +35,13 @@ function LoginForm({ onSwitch }) {
     <div className={styles.formCard}>
       <div className={styles.formHeader}>
         <div className={styles.formIcon}>🔐</div>
-        <h2>Masuk ke CampusRelove</h2>
+        <h2>Masuk ke Preloved</h2>
         <p>Selamat datang kembali!</p>
       </div>
 
       {/* Demo credentials hint */}
       <div className={styles.demoHint}>
-        <strong>🔑 Demo Admin:</strong> admin@campusrelove.id / admin123
+        <strong>🔑 Demo Admin:</strong> admin@preloved.id / admin123
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -184,7 +184,7 @@ function RegisterForm({ onSwitch }) {
               name="serviceArea"
               value={form.serviceArea}
               onChange={handleChange}
-              placeholder="Contoh: Sekitar UI Depok, Margonda"
+              placeholder="Contoh: Jakarta Selatan, Depok, Bekasi"
               required
             />
           </div>
@@ -227,18 +227,18 @@ function RegisterForm({ onSwitch }) {
     return (
       <div className={styles.formCard}>
         <div className={styles.formHeader}>
-          <div className={styles.formIcon}>🎓</div>
-          <h2>Upload KTM</h2>
-          <p>Verifikasi identitas mahasiswa kamu — hanya sekali saat daftar</p>
+          <div className={styles.formIcon}>🪪</div>
+          <h2>Verifikasi Identitas</h2>
+          <p>Upload foto KTP/SIM/Paspor — hanya sekali saat daftar</p>
         </div>
 
         <div className={styles.ktmUploadArea} onClick={() => document.getElementById('reg-ktm').click()}>
           {ktmPreview ? (
-            <img src={ktmPreview} alt="KTM" className={styles.ktmPreviewImg} />
+            <img src={ktmPreview} alt="ID" className={styles.ktmPreviewImg} />
           ) : (
             <>
               <div className={styles.ktmUploadIcon}>📷</div>
-              <p>Klik untuk upload foto KTM</p>
+              <p>Klik untuk upload foto KTP/SIM/Paspor</p>
               <span>JPG / PNG, max 5MB</span>
             </>
           )}
@@ -269,9 +269,9 @@ function RegisterForm({ onSwitch }) {
   return (
     <div className={styles.formCard}>
       <div className={styles.formHeader}>
-        <div className={styles.formIcon}>🎓</div>
-        <h2>Daftar CampusRelove</h2>
-        <p>Bergabung dengan komunitas mahasiswa</p>
+        <div className={styles.formIcon}>🎉</div>
+        <h2>Daftar Preloved</h2>
+        <p>Bergabung dengan jutaan pengguna Preloved</p>
       </div>
 
       {/* Role selector — 3 pilihan */}
@@ -302,7 +302,7 @@ function RegisterForm({ onSwitch }) {
       {/* Role description */}
       {form.role === 'carrier' && (
         <div className={styles.roleDesc}>
-          🚚 Sebagai <strong>Carrier</strong>, kamu bisa mengambil tugas angkut barang antar mahasiswa dan mendapatkan komisi dari setiap pengiriman.
+          🚚 Sebagai <strong>Carrier</strong>, kamu bisa mengambil tugas angkut barang dan mendapatkan komisi dari setiap pengiriman.
         </div>
       )}
 
@@ -314,7 +314,7 @@ function RegisterForm({ onSwitch }) {
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Nama kamu"
+            placeholder="Nama lengkap kamu"
             required
           />
         </div>
@@ -326,44 +326,33 @@ function RegisterForm({ onSwitch }) {
             name="email"
             value={form.email}
             onChange={handleChange}
-            placeholder="email@kampus.ac.id"
+            placeholder="email@contoh.com"
             required
           />
         </div>
 
         <div className={styles.fieldRow}>
           <div className={styles.field}>
-            <label>🏛️ Universitas</label>
+            <label>🏙️ Kota</label>
             <input
               type="text"
               name="university"
               value={form.university}
               onChange={handleChange}
-              placeholder="Nama universitas"
+              placeholder="Jakarta, Bandung, dll"
             />
           </div>
           <div className={styles.field}>
-            <label>📅 Angkatan</label>
+            <label>📱 No. WhatsApp</label>
             <input
-              type="text"
+              type="tel"
               name="angkatan"
               value={form.angkatan}
               onChange={handleChange}
-              placeholder="2022"
-              maxLength={4}
+              placeholder="08xxxxxxxxxx"
+              maxLength={15}
             />
           </div>
-        </div>
-
-        <div className={styles.field}>
-          <label>🎓 Fakultas / Jurusan</label>
-          <input
-            type="text"
-            name="faculty"
-            value={form.faculty}
-            onChange={handleChange}
-            placeholder="Teknik Informatika"
-          />
         </div>
 
         <div className={styles.field}>
@@ -430,19 +419,19 @@ export default function AuthPage() {
         <div className={styles.branding}>
           <div className={styles.brandLogo}>
             <span>♻️</span>
-            <span>Campus<strong>Relove</strong></span>
+            <span>Pre<strong>loved</strong></span>
           </div>
           <h1 className={styles.brandTitle}>
-            Dari Kakak Tingkat,<br />
-            <span>Untuk Adik Tingkat.</span>
+            Barang Bekas,<br />
+            <span>Nilai Baru.</span>
           </h1>
           <p className={styles.brandDesc}>
-            Marketplace thrifting & furniture antar mahasiswa. Hemat lebih banyak, bantu sesama, dan jaga lingkungan kampus tetap hijau. 🌱
+            Marketplace jual beli barang preloved terpercaya untuk semua orang. Hemat lebih banyak, bantu sesama, dan jaga lingkungan tetap hijau. 🌱
           </p>
           <div className={styles.brandFeatures}>
-            <div className={styles.brandFeature}>✅ Terverifikasi KTM</div>
-            <div className={styles.brandFeature}>📍 Meet-up Aman di Kampus</div>
-            <div className={styles.brandFeature}>🚚 Relove-Carry Tersedia</div>
+            <div className={styles.brandFeature}>✅ Verifikasi Identitas</div>
+            <div className={styles.brandFeature}>📍 Meet-up di Lokasi Aman</div>
+            <div className={styles.brandFeature}>🚚 Preloved-Carry Tersedia</div>
             <div className={styles.brandFeature}>⭐ Rating & Ulasan Terpercaya</div>
           </div>
         </div>

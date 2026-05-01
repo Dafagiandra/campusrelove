@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.adminBadge}>🛡️ Admin Panel</div>
-          <h1 className={styles.headerTitle}>CampusRelove Admin</h1>
+          <h1 className={styles.headerTitle}>Preloved Admin</h1>
           <p className={styles.headerSub}>Selamat datang, <strong>{user?.name}</strong></p>
         </div>
         <div className={styles.headerRight}>

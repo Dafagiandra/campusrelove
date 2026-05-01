@@ -40,9 +40,12 @@ export default function ProductCard({ product }) {
     : 0
 
   const categoryColors = {
-    furniture: { bg: '#EDE9FE', color: '#7C3AED', label: '🪑 Furniture' },
+    furniture:  { bg: '#EDE9FE', color: '#7C3AED', label: '🪑 Furniture' },
     electronic: { bg: '#D1FAE5', color: '#059669', label: '💻 Electronic' },
-    academic: { bg: '#FEF3C7', color: '#D97706', label: '📚 Academic' },
+    fashion:    { bg: '#FCE7F3', color: '#DB2777', label: '👕 Fashion' },
+    hobi:       { bg: '#FEF3C7', color: '#D97706', label: '🎮 Hobi' },
+    otomotif:   { bg: '#FEE2E2', color: '#DC2626', label: '🏍️ Otomotif' },
+    academic:   { bg: '#FEF3C7', color: '#D97706', label: '📚 Lainnya' },
   }
   const cat = categoryColors[product.category] || { bg: '#F3F4F6', color: '#6B7280', label: product.category }
 

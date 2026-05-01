@@ -8,13 +8,13 @@ function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.heroContent}>
-        <div className={styles.heroBadge}>🎓 Khusus Mahasiswa Terverifikasi</div>
+        <div className={styles.heroBadge}>✅ Terverifikasi & Terpercaya</div>
         <h1 className={styles.heroTitle}>
-          Dari Kakak Tingkat,<br />
-          <span className={styles.heroAccent}>Untuk Adik Tingkat.</span>
+          Barang Bekas,<br />
+          <span className={styles.heroAccent}>Nilai Baru.</span>
         </h1>
         <p className={styles.heroDesc}>
-          Marketplace thrifting & furniture antar mahasiswa. Hemat lebih banyak, bantu sesama, dan jaga lingkungan kampus tetap hijau. 🌱
+          Marketplace jual beli barang preloved terpercaya. Temukan barang berkualitas dengan harga terjangkau, atau jual barang yang sudah tidak terpakai. 🌱
         </p>
         <div className={styles.heroActions}>
           <Link to="/browse" className="btn-primary">
@@ -26,13 +26,13 @@ function HeroSection() {
         </div>
         <div className={styles.heroStats}>
           <div className={styles.stat}>
-            <span className={styles.statNum}>2.4K+</span>
+            <span className={styles.statNum}>24K+</span>
             <span className={styles.statLabel}>Barang Terjual</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.stat}>
-            <span className={styles.statNum}>1.2K+</span>
-            <span className={styles.statLabel}>Mahasiswa Aktif</span>
+            <span className={styles.statNum}>12K+</span>
+            <span className={styles.statLabel}>Pengguna Aktif</span>
           </div>
           <div className={styles.statDivider}></div>
           <div className={styles.stat}>
@@ -43,13 +43,13 @@ function HeroSection() {
       </div>
       <div className={styles.heroVisual}>
         <div className={styles.floatingCard} style={{ '--delay': '0s', '--x': '10%', '--y': '15%' }}>
-          <span>🪑</span> Lemari 2 Pintu<br /><strong>Rp 350.000</strong>
+          <span>👕</span> Jaket Denim<br /><strong>Rp 120.000</strong>
         </div>
         <div className={styles.floatingCard} style={{ '--delay': '0.5s', '--x': '60%', '--y': '5%' }}>
           <span>💻</span> Laptop ASUS<br /><strong>Rp 3.200.000</strong>
         </div>
         <div className={styles.floatingCard} style={{ '--delay': '1s', '--x': '75%', '--y': '55%' }}>
-          <span>📚</span> Buku Kalkulus<br /><strong>Rp 120.000</strong>
+          <span>🪑</span> Lemari 2 Pintu<br /><strong>Rp 350.000</strong>
         </div>
         <div className={styles.heroIllustration}>
           <div className={styles.circle1}></div>
@@ -63,11 +63,12 @@ function HeroSection() {
 }
 
 function CategorySection() {
-  const cats = categories.filter((c) => c.id !== 'all')
   const catDetails = [
-    { id: 'furniture', icon: '🪑', label: 'Furniture', desc: 'Lemari, meja, kasur & lebih', count: 124, gradient: 'linear-gradient(135deg, #7C3AED, #2563EB)' },
-    { id: 'electronic', icon: '💻', label: 'Electronic', desc: 'Laptop, kipas, rice cooker', count: 89, gradient: 'linear-gradient(135deg, #10B981, #059669)' },
-    { id: 'academic', icon: '📚', label: 'Academic Supplies', desc: 'Buku, alat tulis & lebih', count: 67, gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' },
+    { id: 'fashion',    icon: '👕', label: 'Fashion',    desc: 'Baju, sepatu, tas & aksesoris',  count: 312, gradient: 'linear-gradient(135deg, #EC4899, #F43F5E)' },
+    { id: 'electronic', icon: '💻', label: 'Electronic', desc: 'Laptop, HP, gadget & elektronik', count: 189, gradient: 'linear-gradient(135deg, #10B981, #059669)' },
+    { id: 'furniture',  icon: '🪑', label: 'Furniture',  desc: 'Lemari, meja, kasur & dekorasi',  count: 124, gradient: 'linear-gradient(135deg, #7C3AED, #2563EB)' },
+    { id: 'hobi',       icon: '🎮', label: 'Hobi',       desc: 'Game, olahraga, koleksi & seni',  count: 98,  gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' },
+    { id: 'otomotif',   icon: '🏍️', label: 'Otomotif',   desc: 'Sparepart, aksesoris kendaraan',  count: 67,  gradient: 'linear-gradient(135deg, #EF4444, #DC2626)' },
   ]
 
   return (
@@ -121,7 +122,6 @@ function HotItemsSection() {
 
 function NewArrivalsSection() {
   const { allProducts } = useProducts()
-  // Show newest products: user-uploaded first, then static new ones
   const newProducts = allProducts
     .filter((p) => p.isNew || p.id.startsWith('up_'))
     .slice(0, 4)
@@ -148,17 +148,17 @@ function NewArrivalsSection() {
 
 function FeatureSection() {
   const features = [
-    { icon: '🎓', title: 'Verifikasi KTM', desc: 'Semua penjual & pembeli terverifikasi dengan KTM kampus. Transaksi lebih aman dan terpercaya.', color: '#7C3AED' },
-    { icon: '📍', title: 'Meet-up Planner', desc: 'Pilih titik temu aman di kampus. COD di lokasi yang sudah dikenal dan ramai.', color: '#2563EB' },
-    { icon: '🚚', title: 'Relove-Carry', desc: 'Jasa angkut lokal antar kos di sekitar kampus. Estimasi biaya transparan.', color: '#10B981' },
-    { icon: '⭐', title: 'Rating & Reputasi', desc: 'Sistem rating dan ulasan dari sesama mahasiswa. Pilih penjual terpercaya.', color: '#F59E0B' },
+    { icon: '✅', title: 'Verifikasi Identitas', desc: 'Semua penjual & pembeli terverifikasi dengan KTP/ID. Transaksi lebih aman dan terpercaya.', color: '#7C3AED' },
+    { icon: '📍', title: 'Meet-up Planner', desc: 'Pilih titik temu aman di lokasi publik. COD di tempat yang ramai dan mudah dijangkau.', color: '#2563EB' },
+    { icon: '🚚', title: 'Preloved-Carry', desc: 'Jasa angkut barang lokal ke seluruh kota. Estimasi biaya transparan dan carrier terverifikasi.', color: '#10B981' },
+    { icon: '⭐', title: 'Rating & Reputasi', desc: 'Sistem rating dan ulasan dari sesama pengguna. Pilih penjual terpercaya dengan mudah.', color: '#F59E0B' },
   ]
 
   return (
     <section className={styles.features}>
       <div className="container">
-        <h2 className="section-title" style={{ textAlign: 'center' }}>Kenapa CampusRelove?</h2>
-        <p className="section-subtitle" style={{ textAlign: 'center' }}>Dirancang khusus untuk kebutuhan mahasiswa</p>
+        <h2 className="section-title" style={{ textAlign: 'center' }}>Kenapa Preloved?</h2>
+        <p className="section-subtitle" style={{ textAlign: 'center' }}>Platform jual beli barang bekas yang aman, mudah, dan terpercaya untuk semua orang</p>
         <div className={styles.featGrid}>
           {features.map((f) => (
             <div key={f.title} className={styles.featCard}>
@@ -182,7 +182,7 @@ function CTASection() {
         <div className={styles.ctaBox}>
           <div className={styles.ctaContent}>
             <h2>Punya barang yang nggak terpakai?</h2>
-            <p>Jual sekarang dan bantu adik tingkat yang membutuhkan. Proses mudah, aman, dan cepat!</p>
+            <p>Jual sekarang dan dapatkan uang tambahan. Proses mudah, aman, dan cepat. Barang bekasmu bisa jadi rezeki orang lain!</p>
             <div className={styles.ctaActions}>
               <Link to="/dashboard" className={styles.ctaBtn}>
                 📦 Mulai Jual Sekarang
@@ -193,7 +193,7 @@ function CTASection() {
             </div>
           </div>
           <div className={styles.ctaEmojis}>
-            <span>🪑</span><span>💻</span><span>📚</span><span>🍳</span><span>🎒</span>
+            <span>👕</span><span>💻</span><span>🪑</span><span>🎮</span><span>🏍️</span>
           </div>
         </div>
       </div>

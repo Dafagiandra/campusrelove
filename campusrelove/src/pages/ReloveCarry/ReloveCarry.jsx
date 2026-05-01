@@ -409,12 +409,12 @@ export default function ReloveCarry() {
       {/* Hero */}
       <div className={styles.hero}>
         <div className="container">
-          <div className={styles.heroBadge}>🚚 Jasa Angkut Lokal Kampus</div>
+          <div className={styles.heroBadge}>🚚 Jasa Angkut Lokal</div>
           <h1 className={styles.heroTitle}>
-            Relove<span className={styles.heroAccent}>-Carry</span>
+            Preloved<span className={styles.heroAccent}>-Carry</span>
           </h1>
           <p className={styles.heroDesc}>
-            Jasa angkut barang lokal antar kos di sekitar kampus. Aman, terpercaya, dan harga transparan. Dikelola oleh sesama mahasiswa!
+            Jasa angkut barang lokal ke seluruh kota. Aman, terpercaya, dan harga transparan. Dikelola oleh carrier terverifikasi!
           </p>
           <div className={styles.heroFeatures}>
             <span>✅ Harga Transparan</span>

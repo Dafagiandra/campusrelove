@@ -5,7 +5,7 @@ import { useProducts } from '../../context/ProductContext'
 import { useOrders } from '../../context/OrderContext'
 import styles from './SellerDashboard.module.css'
 
-// ─── KTM Verification ────────────────────────────────────────────────────────
+// ─── ID Verification ─────────────────────────────────────────────────────────
 function KTMVerification({ onVerified }) {
   const [step, setStep] = useState(1) // 1=upload, 2=review, 3=done
   const [file, setFile] = useState(null)
@@ -27,7 +27,6 @@ function KTMVerification({ onVerified }) {
     setTimeout(() => {
       setLoading(false)
       setStep(3)
-      // Langsung panggil onVerified — simpan ke localStorage via updateProfile
       onVerified()
     }, 1800)
   }
@@ -37,7 +36,7 @@ function KTMVerification({ onVerified }) {
       <div className={styles.ktmSuccessCard}>
         <div className={styles.ktmSuccessIcon}>🎉</div>
         <div className={styles.ktmSuccessText}>
-          <h3>KTM Terverifikasi!</h3>
+          <h3>Identitas Terverifikasi!</h3>
           <p>Akun kamu sudah terverifikasi. Kamu bisa mulai berjualan sekarang.</p>
         </div>
       </div>
@@ -48,10 +47,10 @@ function KTMVerification({ onVerified }) {
     <div className={styles.ktmCard}>
       {/* Header */}
       <div className={styles.ktmCardHeader}>
-        <div className={styles.ktmCardIcon}>🎓</div>
+        <div className={styles.ktmCardIcon}>🪪</div>
         <div className={styles.ktmCardTitle}>
-          <h3>Verifikasi KTM</h3>
-          <p>Upload foto KTM untuk mulai berjualan — hanya sekali</p>
+          <h3>Verifikasi Identitas</h3>
+          <p>Upload foto KTP/SIM/Paspor — hanya sekali</p>
         </div>
         <div className={styles.ktmStepIndicator}>
           {[1, 2].map(s => (
@@ -65,11 +64,11 @@ function KTMVerification({ onVerified }) {
         <div className={styles.ktmBody}>
           <label className={styles.ktmDropzone} htmlFor="ktm-file">
             {preview ? (
-              <img src={preview} alt="KTM Preview" className={styles.ktmPreviewImg} />
+              <img src={preview} alt="ID Preview" className={styles.ktmPreviewImg} />
             ) : (
               <div className={styles.ktmDropzoneInner}>
                 <span className={styles.ktmDropzoneIcon}>📷</span>
-                <span className={styles.ktmDropzoneText}>Klik untuk pilih foto KTM</span>
+                <span className={styles.ktmDropzoneText}>Klik untuk pilih foto KTP/SIM/Paspor</span>
                 <span className={styles.ktmDropzoneHint}>JPG / PNG · Maks 5MB</span>
               </div>
             )}
@@ -96,7 +95,7 @@ function KTMVerification({ onVerified }) {
       {step === 2 && (
         <div className={styles.ktmBody}>
           <div className={styles.ktmReviewRow}>
-            <img src={preview} alt="KTM" className={styles.ktmReviewImg} />
+            <img src={preview} alt="ID" className={styles.ktmReviewImg} />
             <div className={styles.ktmReviewMeta}>
               <div className={styles.ktmReviewFile}>
                 <span>📄</span>
@@ -106,7 +105,7 @@ function KTMVerification({ onVerified }) {
                 </div>
               </div>
               <p className={styles.ktmReviewNote}>
-                Pastikan foto KTM kamu jelas dan semua informasi terbaca sebelum submit.
+                Pastikan foto identitas kamu jelas dan semua informasi terbaca sebelum submit.
               </p>
             </div>
           </div>
@@ -555,15 +554,15 @@ export default function SellerDashboard() {
             <div className={styles.profileNameRow}>
               <h1 className={styles.profileName}>{seller.name}</h1>
               {isVerified ? (
-                <span className={styles.verifiedBadge}>✓ Terverifikasi KTM</span>
+                <span className={styles.verifiedBadge}>✓ Terverifikasi</span>
               ) : (
                 <span className={styles.unverifiedBadge}>⚠️ Belum Terverifikasi</span>
               )}
             </div>
             <p className={styles.profileUni}>
               {seller.faculty && `${seller.faculty} · `}
-              {seller.university}
-              {seller.angkatan && ` · Angkatan ${seller.angkatan}`}
+              {seller.city || seller.university || ''}
+              {seller.phone && ` · ${seller.phone}`}
             </p>
             <div className={styles.profileStats}>
               <div className={styles.profileStat}>

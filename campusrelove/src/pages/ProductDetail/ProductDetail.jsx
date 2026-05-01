@@ -150,11 +150,11 @@ function SellerProfile({ seller }) {
           <div className={styles.sellerNameRow}>
             <h3 className={styles.sellerName}>{seller.name}</h3>
             {seller.verified && (
-              <span className={styles.verifiedBadge}>✓ Terverifikasi KTM</span>
+              <span className={styles.verifiedBadge}>✓ Terverifikasi</span>
             )}
           </div>
-          <p className={styles.sellerUni}>{seller.faculty} · {seller.university}</p>
-          <p className={styles.sellerAngkatan}>Angkatan {seller.angkatan}</p>
+          <p className={styles.sellerUni}>{seller.city || seller.university || ''}</p>
+          <p className={styles.sellerAngkatan}>{seller.faculty || ''}</p>
           <div className={styles.sellerStats}>
             <div className={styles.sellerStat}>
               <StarRating rating={seller.rating} />
@@ -258,11 +258,14 @@ export default function ProductDetail() {
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
 
   const categoryColors = {
-    furniture: { bg: '#EDE9FE', color: '#7C3AED', label: '🪑 Furniture' },
+    furniture:  { bg: '#EDE9FE', color: '#7C3AED', label: '🪑 Furniture' },
     electronic: { bg: '#D1FAE5', color: '#059669', label: '💻 Electronic' },
-    academic: { bg: '#FEF3C7', color: '#D97706', label: '📚 Academic' },
+    fashion:    { bg: '#FCE7F3', color: '#DB2777', label: '👕 Fashion' },
+    hobi:       { bg: '#FEF3C7', color: '#D97706', label: '🎮 Hobi' },
+    otomotif:   { bg: '#FEE2E2', color: '#DC2626', label: '🏍️ Otomotif' },
+    academic:   { bg: '#FEF3C7', color: '#D97706', label: '📚 Lainnya' },
   }
-  const cat = categoryColors[product.category]
+  const cat = categoryColors[product.category] || { bg: '#F3F4F6', color: '#6B7280', label: product.category }
 
   return (
     <div className={styles.page}>

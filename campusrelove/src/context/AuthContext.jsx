@@ -4,7 +4,7 @@ const AuthContext = createContext(null)
 
 // Akun admin default
 const ADMIN_ACCOUNTS = [
-  { id: 'admin1', email: 'admin@campusrelove.id', password: 'admin123', name: 'Admin CampusRelove', role: 'admin' },
+  { id: 'admin1', email: 'admin@preloved.id', password: 'admin123', name: 'Admin Preloved', role: 'admin' },
 ]
 
 // Simulasi database user di localStorage
@@ -93,9 +93,9 @@ export function AuthProvider({ children }) {
       email,
       password,
       role,
-      university: university || 'Universitas Indonesia',
-      faculty: faculty || '',
-      angkatan: angkatan || '',
+      city:     university || '',   // reuse 'university' field as 'city'
+      phone:    angkatan   || '',   // reuse 'angkatan' field as 'phone'
+      faculty:  faculty    || '',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
       rating: 0,
       totalSales: 0,

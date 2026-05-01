@@ -114,8 +114,7 @@ export default function Browse() {
                   <span className={styles.catBtnCount}>
                     {cat.id === 'all'
                       ? allProducts.length
-                      : allProducts.filter(p => p.category === cat.id).length}
-                  </span>
+                      : allProducts.filter(p => p.category === cat.id).length}                  </span>
                 </button>
               ))}
             </div>

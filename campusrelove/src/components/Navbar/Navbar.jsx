@@ -16,7 +16,7 @@ export default function Navbar() {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/browse', label: 'Browse' },
-    { to: '/relove-carry', label: 'Relove-Carry 🚚' },
+    { to: '/relove-carry', label: 'Preloved-Carry 🚚' },
   ]
 
   const handleLogout = () => {
@@ -42,7 +42,7 @@ export default function Navbar() {
         <Link to="/" className={styles.logo}>
           <span className={styles.logoIcon}>♻️</span>
           <span className={styles.logoText}>
-            Campus<span className={styles.logoAccent}>Relove</span>
+            Pre<span className={styles.logoAccent}>loved</span>
           </span>
         </Link>
 

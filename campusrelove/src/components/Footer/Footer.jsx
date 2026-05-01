@@ -9,25 +9,26 @@ export default function Footer() {
           <div className={styles.brand}>
             <div className={styles.logo}>
               <span>♻️</span>
-              <span className={styles.logoText}>Campus<span className={styles.accent}>Relove</span></span>
+              <span className={styles.logoText}>Pre<span className={styles.accent}>loved</span></span>
             </div>
-            <p className={styles.slogan}>"Dari Kakak Tingkat,<br />Untuk Adik Tingkat."</p>
-            <p className={styles.desc}>Marketplace thrifting dan furniture antar mahasiswa. Hemat, ramah lingkungan, dan mempererat komunitas kampus.</p>
+            <p className={styles.slogan}>"Barang Bekas,<br />Nilai Baru."</p>
+            <p className={styles.desc}>Marketplace jual beli barang preloved terpercaya untuk semua orang. Hemat, ramah lingkungan, dan mempererat komunitas.</p>
           </div>
 
           <div className={styles.links}>
             <h4>Navigasi</h4>
             <Link to="/">Home</Link>
             <Link to="/browse">Browse Barang</Link>
-            <Link to="/relove-carry">Relove-Carry</Link>
+            <Link to="/relove-carry">Preloved-Carry</Link>
             <Link to="/dashboard">Dashboard Penjual</Link>
           </div>
 
           <div className={styles.links}>
             <h4>Kategori</h4>
-            <Link to="/browse?cat=furniture">🪑 Furniture</Link>
+            <Link to="/browse?cat=fashion">👕 Fashion</Link>
             <Link to="/browse?cat=electronic">💻 Electronic</Link>
-            <Link to="/browse?cat=academic">📚 Academic Supplies</Link>
+            <Link to="/browse?cat=furniture">🪑 Furniture</Link>
+            <Link to="/browse?cat=hobi">🎮 Hobi</Link>
           </div>
 
           <div className={styles.links}>
@@ -40,11 +41,11 @@ export default function Footer() {
         </div>
 
         <div className={styles.bottom}>
-          <p>© 2024 CampusRelove. Made with 💜 untuk mahasiswa Indonesia.</p>
+          <p>© 2024 Preloved. Made with 💜 untuk semua orang Indonesia.</p>
           <div className={styles.badges}>
             <span className={styles.badge}>🌱 Eco-Friendly</span>
-            <span className={styles.badge}>🔒 Verified KTM</span>
-            <span className={styles.badge}>🤝 Komunitas Kampus</span>
+            <span className={styles.badge}>🔒 Verified ID</span>
+            <span className={styles.badge}>🤝 Komunitas Terpercaya</span>
           </div>
         </div>
       </div>
