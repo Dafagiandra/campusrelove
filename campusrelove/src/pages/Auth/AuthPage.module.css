@@ -231,7 +231,7 @@
   padding: 11px 14px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  font-size: 0.88rem;
+  font-size: 16px; /* prevent zoom on iOS */
   font-family: 'Poppins', sans-serif;
   outline: none;
   transition: border-color 0.2s;
@@ -321,16 +321,18 @@
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 24px;
+    padding: 16px;
   }
 
   .branding {
     text-align: center;
     padding: 0;
+    display: none; /* Hide branding on small mobile to save space */
   }
 
   .brandTitle {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
   }
 
   .brandFeatures {
@@ -338,8 +340,20 @@
   }
 
   .formCard {
-    padding: 28px 20px;
+    padding: 24px 16px;
+    border-radius: 20px;
   }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 768px) {
+  .branding {
+    display: block;
+  }
+  .brandTitle { font-size: 1.8rem; }
 }
 
 /* KTM upload in register */

@@ -231,3 +231,36 @@
   transform: rotate(-5deg);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
 }
+
+/* ── Mobile responsive fixes ── */
+.body {
+  padding: 12px;
+}
+
+@media (min-width: 480px) {
+  .body { padding: 14px; }
+}
+
+@media (min-width: 768px) {
+  .body { padding: 16px; }
+  .card:hover { transform: translateY(-6px); }
+}
+
+/* Disable hover transform on touch devices */
+@media (hover: none) {
+  .card:hover { transform: none; }
+  .card:hover .image { transform: none; }
+}
+
+.title {
+  font-size: 0.82rem;
+}
+
+@media (min-width: 480px) { .title { font-size: 0.88rem; } }
+@media (min-width: 768px) { .title { font-size: 0.95rem; } }
+
+.price {
+  font-size: 0.95rem;
+}
+
+@media (min-width: 768px) { .price { font-size: 1.1rem; } }

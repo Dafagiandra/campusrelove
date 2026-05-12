@@ -142,3 +142,39 @@
   .convList { height: 200px; border-right: none; border-bottom: 1px solid #f3f4f6; }
   .chatWindow { height: 400px; }
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .page { padding: 20px 0 60px; }
+  .pageTitle { font-size: 1.4rem; margin-bottom: 16px; }
+
+  .layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+    border-radius: 16px;
+  }
+
+  .convList {
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #f3f4f6;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .chatArea { min-height: 400px; }
+  .chatWindow { height: 400px; }
+
+  .messages { padding: 14px; }
+  .bubble { max-width: 80%; }
+
+  .chatInputRow { padding: 10px 12px; }
+  .chatInput { font-size: 16px; /* prevent zoom */ }
+}
+
+@media (max-width: 480px) {
+  .convItem { padding: 10px 12px; }
+  .convAvatar { width: 36px; height: 36px; font-size: 0.9rem; }
+  .convName { font-size: 0.82rem; }
+  .chatWindow { height: 360px; }
+}

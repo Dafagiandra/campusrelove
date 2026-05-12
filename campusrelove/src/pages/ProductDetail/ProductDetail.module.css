@@ -762,3 +762,43 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(124,58,237,0.4);
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .page { padding: 20px 0 60px; }
+
+  .breadcrumb { font-size: 0.75rem; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .layout { grid-template-columns: 1fr; gap: 20px; }
+
+  .gallery { position: static; }
+
+  .mainImage { border-radius: 14px; }
+
+  .productTitle { font-size: 1.3rem; }
+
+  .price { font-size: 1.6rem; }
+
+  .actions { flex-direction: column; }
+  .btnBuy, .btnChat { width: 100%; justify-content: center; }
+
+  .meetupDateTime { grid-template-columns: 1fr; }
+
+  .meetupPoints { gap: 8px; }
+  .meetupPoint { padding: 12px; }
+
+  .sellerHeader { flex-direction: column; align-items: flex-start; }
+
+  .statsRow { flex-wrap: wrap; gap: 8px; font-size: 0.78rem; }
+
+  .tags { gap: 6px; }
+  .tag { font-size: 0.72rem; padding: 3px 10px; }
+}
+
+@media (max-width: 480px) {
+  .productTitle { font-size: 1.15rem; }
+  .price { font-size: 1.4rem; }
+  .discountBadge { font-size: 0.72rem; }
+
+  .chatBox { border-radius: 12px; }
+}

@@ -312,8 +312,8 @@
     right: 0;
     background: white;
     flex-direction: column;
-    padding: 20px;
-    gap: 8px;
+    padding: 16px;
+    gap: 6px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     transform: translateY(-120%);
     opacity: 0;
@@ -322,6 +322,7 @@
     align-items: stretch;
     max-height: calc(100vh - 70px);
     overflow-y: auto;
+    z-index: 999;
   }
 
   .navLinks.open {
@@ -334,27 +335,32 @@
     width: 100%;
     text-align: center;
     padding: 12px;
+    border-radius: 12px;
   }
 
   .authBtns {
     flex-direction: column;
     margin-left: 0;
+    gap: 8px;
   }
 
   .btnLogin,
   .btnRegister {
     text-align: center;
     padding: 12px;
+    width: 100%;
   }
 
   .btnSell {
     text-align: center;
     margin-left: 0;
     padding: 12px;
+    width: 100%;
   }
 
   .userMenu {
     margin-left: 0;
+    width: 100%;
   }
 
   .userBtn {
@@ -367,6 +373,24 @@
     box-shadow: none;
     border: 1px solid #e5e7eb;
     margin-top: 8px;
+    border-radius: 12px;
+  }
+
+  .rightGroup {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  /* Notification dropdown on mobile — full width */
+  .notifDropdown {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 0 0 16px 16px;
+    max-height: 60vh;
   }
 }
 

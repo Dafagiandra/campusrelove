@@ -395,3 +395,52 @@
   color: #9ca3af;
   margin-top: 2px;
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .header { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .headerTitle { font-size: 1.3rem; }
+  .headerRight { width: 100%; justify-content: space-between; }
+  .headerStats { gap: 16px; }
+
+  .container { padding: 16px 12px 60px; }
+
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding: 4px;
+  }
+  .tab { padding: 8px 12px; font-size: 0.78rem; white-space: nowrap; }
+
+  .poolGrid { grid-template-columns: 1fr; }
+  .poolCard { padding: 18px 16px; }
+
+  .activeCard { padding: 18px 16px; }
+  .activeRoute { padding: 12px; }
+  .activeRouteActions { flex-direction: column; gap: 6px; }
+
+  .progressSteps::before { display: none; }
+  .progressStep { min-width: 50px; }
+  .progressDot { width: 24px; height: 24px; font-size: 0.68rem; }
+  .progressStep span { font-size: 0.58rem; }
+
+  .proofUpload { padding: 14px; }
+  .proofDropzone { min-height: 80px; }
+
+  .histList { gap: 10px; }
+  .histCard { padding: 16px; }
+
+  .walletCards { grid-template-columns: 1fr; gap: 10px; }
+  .walletCard { padding: 16px; }
+
+  .walletHistList { gap: 8px; }
+  .walletHistRow { padding: 12px; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .headerStats { gap: 12px; }
+  .headerStat strong { font-size: 1rem; }
+  .nextStatusBtn { font-size: 0.85rem; padding: 12px; }
+}

@@ -215,3 +215,35 @@
   .summaryCard { position: static; }
   .steps::before { display: none; }
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .page { padding: 20px 0 60px; }
+  .pageTitle { font-size: 1.4rem; margin-bottom: 20px; }
+
+  .layout { grid-template-columns: 1fr; }
+  .summaryCard { position: static; }
+
+  .steps::before { display: none; }
+  .stepNum { width: 28px; height: 28px; font-size: 0.78rem; }
+  .step span:last-child { font-size: 0.68rem; }
+
+  .card { padding: 20px 16px; border-radius: 16px; }
+
+  .meetupList { gap: 8px; }
+  .meetupBtn { padding: 12px; }
+
+  .payMethods { gap: 8px; }
+  .payBtn { padding: 12px 14px; }
+
+  .stepActions { flex-direction: column; }
+  .btnPrimary, .btnOutline { width: 100%; justify-content: center; }
+
+  .successCard { padding: 32px 20px; margin: 32px auto; }
+  .successActions { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .breadcrumb { font-size: 0.72rem; }
+  .pageTitle { font-size: 1.2rem; }
+}

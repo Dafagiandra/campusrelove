@@ -7,9 +7,9 @@ import styles from './Browse.module.css'
 
 const sortOptions = [
   { value: 'newest', label: '🕐 Terbaru' },
-  { value: 'price-asc', label: '💰 Harga Terendah' },
-  { value: 'price-desc', label: '💎 Harga Tertinggi' },
-  { value: 'popular', label: '🔥 Terpopuler' },
+  { value: 'price-asc', label: '💰 Terendah' },
+  { value: 'price-desc', label: '💎 Tertinggi' },
+  { value: 'popular', label: '🔥 Populer' },
 ]
 
 export default function Browse() {
@@ -21,6 +21,7 @@ export default function Browse() {
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [conditionFilter, setConditionFilter] = useState('all')
+  const [filterOpen, setFilterOpen] = useState(false)  // mobile filter toggle
 
   useEffect(() => {
     const cat = searchParams.get('cat')
@@ -85,7 +86,7 @@ export default function Browse() {
             <span className={styles.searchIcon}>🔍</span>
             <input
               type="text"
-              placeholder="Cari barang, misal: laptop, lemari, buku kalkulus..."
+              placeholder="Cari barang, misal: laptop, jaket, kursi..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={styles.searchInput}
@@ -99,22 +100,34 @@ export default function Browse() {
 
       <div className="container">
         <div className={styles.layout}>
+          {/* Mobile filter toggle */}
+          <button
+            className={styles.filterToggle}
+            onClick={() => setFilterOpen(!filterOpen)}
+          >
+            🔧 Filter {filterOpen ? '▲' : '▼'}
+            {(activeCategory !== 'all' || priceMin || priceMax || conditionFilter !== 'all') && (
+              <span style={{ background:'#7C3AED', color:'white', borderRadius:'50%', width:18, height:18, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'0.65rem', fontWeight:700 }}>!</span>
+            )}
+          </button>
+
           {/* Sidebar Filters */}
-          <aside className={styles.sidebar}>
+          <aside className={filterOpen ? styles.sidebar : `${styles.sidebar} ${styles.sidebarHidden}`}>
             <div className={styles.filterSection}>
               <h3 className={styles.filterTitle}>📂 Kategori</h3>
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   className={`${styles.catBtn} ${activeCategory === cat.id ? styles.catBtnActive : ''}`}
-                  onClick={() => handleCategoryClick(cat.id)}
+                  onClick={() => { handleCategoryClick(cat.id); setFilterOpen(false) }}
                 >
                   <span>{cat.icon}</span>
                   <span>{cat.label}</span>
                   <span className={styles.catBtnCount}>
                     {cat.id === 'all'
                       ? allProducts.length
-                      : allProducts.filter(p => p.category === cat.id).length}                  </span>
+                      : allProducts.filter(p => p.category === cat.id).length}
+                  </span>
                 </button>
               ))}
             </div>
@@ -156,9 +169,7 @@ export default function Browse() {
                   {opt.label}
                 </button>
               ))}
-            </div>
-
-            <button
+            </div>            <button
               className={styles.resetBtn}
               onClick={() => {
                 setSearch('')

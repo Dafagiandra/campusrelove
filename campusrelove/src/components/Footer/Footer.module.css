@@ -128,3 +128,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .footer { margin-top: 48px; }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .brand { grid-column: 1 / -1; }
+
+  .bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .badges { justify-content: center; flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .slogan { font-size: 0.9rem; }
+  .desc { font-size: 0.8rem; }
+}

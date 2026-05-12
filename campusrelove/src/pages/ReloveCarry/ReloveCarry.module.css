@@ -815,3 +815,31 @@
   cursor: not-allowed;
   font-family: 'Poppins', sans-serif;
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 768px) {
+  .hero { padding: 36px 0 40px; }
+  .heroTitle { font-size: 2rem; }
+  .heroDesc { font-size: 0.9rem; }
+  .heroFeatures { flex-direction: column; gap: 8px; }
+
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .steps::before { display: none; }
+
+  .calculator { padding: 20px 16px; border-radius: 16px; }
+  .itemTypes { grid-template-columns: 1fr; }
+
+  .carriersGrid { grid-template-columns: 1fr; }
+
+  .infoGrid { grid-template-columns: repeat(2, 1fr); }
+
+  .bookingCard { padding: 20px 16px; border-radius: 16px; }
+  .bookingRow { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .heroTitle { font-size: 1.7rem; }
+  .steps { grid-template-columns: 1fr; }
+  .infoGrid { grid-template-columns: 1fr; }
+  .carrierHeader { flex-wrap: wrap; }
+}
