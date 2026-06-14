@@ -5,6 +5,8 @@ const AuthContext = createContext(null)
 // Akun admin default
 const ADMIN_ACCOUNTS = [
   { id: 'admin1', email: 'admin@preloved.id', password: 'admin123', name: 'Admin Preloved', role: 'admin' },
+  // Fallback email lama agar tidak error jika ada yang masih pakai
+  { id: 'admin1', email: 'admin@campusrelove.id', password: 'admin123', name: 'Admin Preloved', role: 'admin' },
 ]
 
 // Simulasi database user di localStorage
@@ -74,8 +76,8 @@ export function AuthProvider({ children }) {
     return { success: false }
   }
 
-  const register = ({ name, email, password, role, university, faculty, angkatan,
-                       vehicleType, serviceArea, whatsappNumber }) => {
+  const register = ({ name, email, password, role, city, phone,
+                       ktpPhoto, selfiePhoto, verificationStatus }) => {
     setLoading(true)
     setError('')
 
@@ -93,25 +95,20 @@ export function AuthProvider({ children }) {
       email,
       password,
       role,
-      city:     university || '',   // reuse 'university' field as 'city'
-      phone:    angkatan   || '',   // reuse 'angkatan' field as 'phone'
-      faculty:  faculty    || '',
+      city:   city  || '',
+      phone:  phone || '',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
       rating: 0,
       totalSales: 0,
       reviews: [],
-      verified: role === 'seller' ? true : false,
+      verified: false,              // admin yang approve setelah cek KTP
       balance: 0,
       joinDate: new Date().toISOString().split('T')[0],
-      // Carrier-specific fields
-      ...(role === 'carrier' && {
-        vehicleType:        vehicleType || '',
-        serviceArea:        serviceArea || '',
-        whatsappNumber:     whatsappNumber || '',
-        isCarrierVerified:  false,
-        totalTrips:         0,
-        carrierRating:      0,
-      }),
+      // Identity verification data
+      ktpPhoto:           ktpPhoto           || null,
+      selfiePhoto:        selfiePhoto        || null,
+      verificationStatus: verificationStatus || 'pending',  // pending | approved | rejected
+      verificationDate:   null,
     }
 
     users.push(newUser)

@@ -957,3 +957,341 @@
   .tableRow { grid-template-columns: 2fr 1fr; }
   .tableEmail { display: none; }
 }
+
+/* ── Verifikasi KTP Tab ──────────────────────────────────────────────────── */
+.verifStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.verifStat {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  border: 2px solid color-mix(in srgb, var(--c) 20%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.verifStatNum {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--c);
+}
+
+.verifStat span:last-child {
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.verifList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.verifCard {
+  background: white;
+  border-radius: 16px;
+  border: 2px solid #fef3c7;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.verifCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.verifAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.verifUserInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.verifUserInfo strong { font-size: 0.95rem; color: #1a1a2e; }
+.verifUserInfo span { font-size: 0.8rem; color: #6b7280; }
+.verifDate { font-size: 0.75rem; color: #9ca3af; }
+
+.verifPendingBadge {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.verifPhotos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.verifPhotoBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.verifPhotoLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.verifPhotoImg {
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.verifPhotoImg:hover { transform: scale(1.02); border-color: #7C3AED; }
+
+.verifZoomBtn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+.verifZoomBtn:hover { border-color: #7C3AED; color: #7C3AED; }
+
+.verifInfo {
+  display: flex;
+  gap: 20px;
+  font-size: 0.82rem;
+  color: #4b5563;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.verifActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.rejectInput {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+}
+.rejectInput:focus { border-color: #ef4444; }
+
+.btnApproveVerif {
+  padding: 9px 18px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btnApproveVerif:hover { background: #059669; transform: translateY(-1px); }
+
+.btnRejectVerif {
+  padding: 9px 18px;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btnRejectVerif:hover { background: #DC2626; transform: translateY(-1px); }
+
+/* Approved / Rejected done list */
+.verifDoneList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.verifDoneRow {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid #e5e7eb;
+}
+
+.verifDoneInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+.verifDoneInfo strong { font-size: 0.88rem; color: #1a1a2e; }
+.verifDoneInfo span { font-size: 0.78rem; color: #6b7280; }
+
+.verifApprovedBadge {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.verifRejectedBadge {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rejectionNote {
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-style: italic;
+}
+
+/* ── Photo Modal ─────────────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modalBox {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalHeader h3 { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+}
+
+.modalUserMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.modalAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.modalUserMeta div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modalUserMeta strong { font-size: 0.9rem; color: #1a1a2e; }
+.modalUserMeta span { font-size: 0.78rem; color: #6b7280; }
+
+.modalPhoto {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 2px solid #e5e7eb;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btnOutline {
+  padding: 9px 18px;
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .verifStats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .verifPhotos { grid-template-columns: 1fr; }
+  .verifActions { flex-direction: column; }
+  .rejectInput { min-width: unset; width: 100%; }
+}

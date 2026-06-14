@@ -150,7 +150,7 @@ function FeatureSection() {
   const features = [
     { icon: '✅', title: 'Verifikasi Identitas', desc: 'Semua penjual & pembeli terverifikasi dengan KTP/ID. Transaksi lebih aman dan terpercaya.', color: '#7C3AED' },
     { icon: '📍', title: 'Meet-up Planner', desc: 'Pilih titik temu aman di lokasi publik. COD di tempat yang ramai dan mudah dijangkau.', color: '#2563EB' },
-    { icon: '🚚', title: 'Preloved-Carry', desc: 'Jasa angkut barang lokal ke seluruh kota. Estimasi biaya transparan dan carrier terverifikasi.', color: '#10B981' },
+    { icon: '💬', title: 'Chat Langsung', desc: 'Chat langsung antara penjual dan pembeli. Tanya detail barang atau atur jadwal COD.', color: '#10B981' },
     { icon: '⭐', title: 'Rating & Reputasi', desc: 'Sistem rating dan ulasan dari sesama pengguna. Pilih penjual terpercaya dengan mudah.', color: '#F59E0B' },
   ]
 

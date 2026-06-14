@@ -19,7 +19,6 @@ export default function Footer() {
             <h4>Navigasi</h4>
             <Link to="/">Home</Link>
             <Link to="/browse">Browse Barang</Link>
-            <Link to="/relove-carry">Preloved-Carry</Link>
             <Link to="/dashboard">Dashboard Penjual</Link>
           </div>
 

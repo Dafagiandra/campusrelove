@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useProducts } from '../../context/ProductContext'
 import { useOrders } from '../../context/OrderContext'
-import { useCarrier, CARRY_STATUS } from '../../context/CarrierContext'
 import styles from './AdminDashboard.module.css'
 
 const getStoredUsers = () => {
   try { return JSON.parse(localStorage.getItem('cr_users') || '[]') }
   catch { return [] }
+}
+
+const saveStoredUsers = (users) => {
+  localStorage.setItem('cr_users', JSON.stringify(users))
 }
 
 function StatCard({ icon, label, value, color }) {
@@ -28,10 +31,34 @@ export default function AdminDashboard() {
           getUnreadCount, getUserNotifs, markNotifRead,
           getEscrowBalance, getAdminWalletBalance, getAdminWalletHistory,
           PLATFORM_FEE_PERCENT } = useOrders()
-  const { getAllCarryOrders, CARRIER_FEE_PERCENT, getCarryEscrowBalance, getCarryEscrowHistory } = useCarrier()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
-  const [users] = useState(getStoredUsers())
+  const [users, setUsers] = useState(getStoredUsers())
+
+  // ── KTP Verification handlers ──────────────────────────────────────────────
+  const [ktpModal, setKtpModal] = useState(null) // { user, type: 'ktp'|'selfie' }
+  const [rejectNote, setRejectNote] = useState('')
+
+  const pendingVerif = users.filter(u => u.verificationStatus === 'pending' && (u.ktpPhoto || u.selfiePhoto))
+  const approvedVerif = users.filter(u => u.verificationStatus === 'approved')
+  const rejectedVerif = users.filter(u => u.verificationStatus === 'rejected')
+
+  const handleApproveKtp = (userId) => {
+    const updated = getStoredUsers().map(u =>
+      u.id === userId ? { ...u, verified: true, verificationStatus: 'approved', verificationDate: new Date().toISOString() } : u
+    )
+    saveStoredUsers(updated)
+    setUsers(updated)
+  }
+
+  const handleRejectKtp = (userId, note) => {
+    const updated = getStoredUsers().map(u =>
+      u.id === userId ? { ...u, verified: false, verificationStatus: 'rejected', rejectionNote: note || 'Identitas tidak valid', verificationDate: new Date().toISOString() } : u
+    )
+    saveStoredUsers(updated)
+    setUsers(updated)
+    setRejectNote('')
+  }
 
   const handleLogout = () => {
     logout()
@@ -40,24 +67,18 @@ export default function AdminDashboard() {
 
   const buyers   = users.filter((u) => u.role === 'buyer')
   const sellers  = users.filter((u) => u.role === 'seller')
-  const carriers = users.filter((u) => u.role === 'carrier')
   const allOrders = getAllOrders()
-  const allCarryOrders = getAllCarryOrders()
   const pendingOrders   = allOrders.filter(o => o.status === 'pending_payment')
   const deliveredOrders = allOrders.filter(o => o.status === 'delivered')
   const completedOrders = allOrders.filter(o => o.status === 'completed')
   const overdueOrders   = allOrders.filter(o => isOverdue(o))
-  const activeCarryOrders = allCarryOrders.filter(o => !['completed','cancelled'].includes(o.status))
   const adminUnread = getUnreadCount('admin1')
   const adminNotifs = getUserNotifs('admin1').slice(0, 10)
 
   // Dana
   const escrowBalance    = getEscrowBalance()
-  const carryEscrow      = getCarryEscrowBalance()
-  const totalEscrow      = escrowBalance + carryEscrow
   const adminWalletBal   = getAdminWalletBalance()
   const adminWalletHist  = getAdminWalletHistory().slice(0, 10)
-  const carryEscrowHist  = getCarryEscrowHistory()
   const totalTransacted  = completedOrders.reduce((s, o) => s + (o.price || 0), 0)
 
   const STATUS_LABEL = {
@@ -72,9 +93,9 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: 'overview', label: '📊 Overview' },
+    { id: 'verifikasi', label: `🪪 Verifikasi KTP${pendingVerif.length > 0 ? ` (${pendingVerif.length})` : ''}` },
     { id: 'dana',     label: `💰 Dana${escrowBalance > 0 ? ` (${(escrowBalance/1000).toFixed(0)}K)` : ''}` },
     { id: 'orders',   label: `📋 Pesanan${pendingOrders.length > 0 ? ` (${pendingOrders.length})` : ''}` },
-    { id: 'carry',    label: `🚚 Jasa Angkut${activeCarryOrders.length > 0 ? ` (${activeCarryOrders.length})` : ''}` },
     { id: 'notifs',   label: `🔔 Notifikasi${adminUnread > 0 ? ` (${adminUnread})` : ''}` },
     { id: 'users',    label: '👥 Pengguna' },
     { id: 'products', label: '📦 Produk' },
@@ -119,12 +140,12 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div>
             <div className={styles.statsGrid}>
-              <StatCard icon="👥" label="Total Pengguna"   value={users.length}       color="#7C3AED" />
-              <StatCard icon="🛍️" label="Pembeli"          value={buyers.length}      color="#2563EB" />
-              <StatCard icon="📦" label="Penjual"          value={sellers.length}     color="#10B981" />
-              <StatCard icon="🚚" label="Carrier"          value={carriers.length}    color="#F59E0B" />
-              <StatCard icon="📋" label="Total Pesanan"    value={allOrders.length}   color="#EF4444" />
-              <StatCard icon="⏳" label="Menunggu Validasi" value={pendingOrders.length} color="#EC4899" />
+              <StatCard icon="👥" label="Total Pengguna"    value={users.length}          color="#7C3AED" />
+              <StatCard icon="🛍️" label="Pembeli"           value={buyers.length}         color="#2563EB" />
+              <StatCard icon="📦" label="Penjual"           value={sellers.length}        color="#10B981" />
+              <StatCard icon="🪪" label="Pending Verifikasi" value={pendingVerif.length}  color="#F59E0B" />
+              <StatCard icon="🏷️" label="Total Produk"      value={allProducts.length}    color="#EC4899" />
+              <StatCard icon="📋" label="Total Pesanan"     value={allOrders.length}      color="#EF4444" />
             </div>
 
             {/* Dana summary cards */}
@@ -132,17 +153,15 @@ export default function AdminDashboard() {
               <div className={styles.danaCard} style={{ '--c': '#2563EB' }}>
                 <div className={styles.danaCardIcon}>🔒</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Total Escrow (Ditahan)</span>
-                  <strong className={styles.danaCardValue}>Rp {totalEscrow.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>
-                    Produk: Rp {escrowBalance.toLocaleString('id-ID')} · Carry: Rp {carryEscrow.toLocaleString('id-ID')}
-                  </span>
+                  <span className={styles.danaCardLabel}>Dana di Escrow (Ditahan)</span>
+                  <strong className={styles.danaCardValue}>Rp {escrowBalance.toLocaleString('id-ID')}</strong>
+                  <span className={styles.danaCardSub}>Dari {allOrders.filter(o => ['paid','processing','shipped'].includes(o.status)).length} pesanan aktif</span>
                 </div>
               </div>
               <div className={styles.danaCard} style={{ '--c': '#10B981' }}>
                 <div className={styles.danaCardIcon}>💰</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Komisi Platform</span>
+                  <span className={styles.danaCardLabel}>Komisi Platform ({PLATFORM_FEE_PERCENT}%)</span>
                   <strong className={styles.danaCardValue}>Rp {adminWalletBal.toLocaleString('id-ID')}</strong>
                   <span className={styles.danaCardSub}>Total terkumpul</span>
                 </div>
@@ -189,43 +208,186 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Verifikasi KTP Tab */}
+        {activeTab === 'verifikasi' && (
+          <div>
+            {/* Stats row */}
+            <div className={styles.verifStats}>
+              <div className={styles.verifStat} style={{ '--c': '#F59E0B' }}>
+                <span className={styles.verifStatNum}>{pendingVerif.length}</span>
+                <span>⏳ Menunggu</span>
+              </div>
+              <div className={styles.verifStat} style={{ '--c': '#10B981' }}>
+                <span className={styles.verifStatNum}>{approvedVerif.length}</span>
+                <span>✅ Disetujui</span>
+              </div>
+              <div className={styles.verifStat} style={{ '--c': '#EF4444' }}>
+                <span className={styles.verifStatNum}>{rejectedVerif.length}</span>
+                <span>❌ Ditolak</span>
+              </div>
+            </div>
+
+            {/* Pending verifications */}
+            <h3 className={styles.sectionTitle}>⏳ Menunggu Verifikasi ({pendingVerif.length})</h3>
+            {pendingVerif.length === 0 ? (
+              <div className={styles.emptyState}><span>✅</span><p>Semua identitas sudah diverifikasi</p></div>
+            ) : (
+              <div className={styles.verifList}>
+                {pendingVerif.map(u => (
+                  <div key={u.id} className={styles.verifCard}>
+                    <div className={styles.verifCardHeader}>
+                      <img src={u.avatar} alt={u.name} className={styles.verifAvatar} />
+                      <div className={styles.verifUserInfo}>
+                        <strong>{u.name}</strong>
+                        <span>{u.email}</span>
+                        <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : styles.roleBuyer}`}>
+                          {u.role === 'seller' ? '📦 Penjual' : '🛍️ Pembeli'}
+                        </span>
+                        <span className={styles.verifDate}>Daftar: {u.joinDate}</span>
+                      </div>
+                      <span className={styles.verifPendingBadge}>⏳ Pending</span>
+                    </div>
+
+                    <div className={styles.verifPhotos}>
+                      {u.ktpPhoto && (
+                        <div className={styles.verifPhotoBox}>
+                          <p className={styles.verifPhotoLabel}>🪪 Foto KTP / Identitas</p>
+                          <img
+                            src={u.ktpPhoto}
+                            alt="KTP"
+                            className={styles.verifPhotoImg}
+                            onClick={() => setKtpModal({ user: u, type: 'ktp' })}
+                          />
+                          <button className={styles.verifZoomBtn} onClick={() => setKtpModal({ user: u, type: 'ktp' })}>
+                            🔍 Lihat Full
+                          </button>
+                        </div>
+                      )}
+                      {u.selfiePhoto && (
+                        <div className={styles.verifPhotoBox}>
+                          <p className={styles.verifPhotoLabel}>🤳 Foto Selfie</p>
+                          <img
+                            src={u.selfiePhoto}
+                            alt="Selfie"
+                            className={styles.verifPhotoImg}
+                            onClick={() => setKtpModal({ user: u, type: 'selfie' })}
+                          />
+                          <button className={styles.verifZoomBtn} onClick={() => setKtpModal({ user: u, type: 'selfie' })}>
+                            🔍 Lihat Full
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.verifInfo}>
+                      <span>📱 WA: {u.phone || '-'}</span>
+                      <span>🏙️ Kota: {u.city || '-'}</span>
+                    </div>
+
+                    <div className={styles.verifActions}>
+                      <input
+                        type="text"
+                        placeholder="Alasan penolakan (jika ditolak)..."
+                        className={styles.rejectInput}
+                        id={`reject-${u.id}`}
+                      />
+                      <button
+                        className={styles.btnApproveVerif}
+                        onClick={() => handleApproveKtp(u.id)}
+                      >
+                        ✅ Setujui
+                      </button>
+                      <button
+                        className={styles.btnRejectVerif}
+                        onClick={() => {
+                          const note = document.getElementById(`reject-${u.id}`)?.value
+                          handleRejectKtp(u.id, note)
+                        }}
+                      >
+                        ❌ Tolak
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Approved */}
+            {approvedVerif.length > 0 && (
+              <>
+                <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>✅ Sudah Diverifikasi ({approvedVerif.length})</h3>
+                <div className={styles.verifDoneList}>
+                  {approvedVerif.map(u => (
+                    <div key={u.id} className={styles.verifDoneRow}>
+                      <img src={u.avatar} alt={u.name} className={styles.tableAvatar} />
+                      <div className={styles.verifDoneInfo}>
+                        <strong>{u.name}</strong>
+                        <span>{u.email}</span>
+                      </div>
+                      <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : styles.roleBuyer}`}>
+                        {u.role === 'seller' ? '📦 Penjual' : '🛍️ Pembeli'}
+                      </span>
+                      <span className={styles.verifApprovedBadge}>✅ Verified</span>
+                      {u.verificationDate && (
+                        <span className={styles.verifDate}>
+                          {new Date(u.verificationDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Rejected */}
+            {rejectedVerif.length > 0 && (
+              <>
+                <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>❌ Ditolak ({rejectedVerif.length})</h3>
+                <div className={styles.verifDoneList}>
+                  {rejectedVerif.map(u => (
+                    <div key={u.id} className={styles.verifDoneRow}>
+                      <img src={u.avatar} alt={u.name} className={styles.tableAvatar} />
+                      <div className={styles.verifDoneInfo}>
+                        <strong>{u.name}</strong>
+                        <span>{u.email}</span>
+                      </div>
+                      <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : styles.roleBuyer}`}>
+                        {u.role === 'seller' ? '📦 Penjual' : '🛍️ Pembeli'}
+                      </span>
+                      <span className={styles.verifRejectedBadge}>❌ Ditolak</span>
+                      {u.rejectionNote && <span className={styles.rejectionNote}>Alasan: {u.rejectionNote}</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Dana Tab */}
         {activeTab === 'dana' && (
           <div>
-            {/* Escrow + Wallet summary */}
             <div className={styles.danaCards} style={{ marginBottom: 32 }}>
               <div className={styles.danaCard} style={{ '--c': '#2563EB' }}>
                 <div className={styles.danaCardIcon}>🔒</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Escrow Produk (Ditahan)</span>
+                  <span className={styles.danaCardLabel}>Dana di Escrow (Ditahan)</span>
                   <strong className={styles.danaCardValue}>Rp {escrowBalance.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Dari {allOrders.filter(o => ['paid','processing','shipped'].includes(o.status)).length} pesanan produk aktif</span>
+                  <span className={styles.danaCardSub}>Dari {allOrders.filter(o => ['paid','processing','shipped'].includes(o.status)).length} pesanan aktif</span>
                 </div>
               </div>
               <div className={styles.danaCard} style={{ '--c': '#10B981' }}>
-                <div className={styles.danaCardIcon}>🚚</div>
-                <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Escrow Carry (Ditahan)</span>
-                  <strong className={styles.danaCardValue}>Rp {carryEscrow.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Dari {allCarryOrders.filter(o => !['completed','cancelled'].includes(o.status)).length} pesanan jasa angkut aktif</span>
-                </div>
-              </div>
-              <div className={styles.danaCard} style={{ '--c': '#F59E0B' }}>
                 <div className={styles.danaCardIcon}>💰</div>
                 <div className={styles.danaCardInfo}>
-                  <span className={styles.danaCardLabel}>Saldo Komisi Admin</span>
+                  <span className={styles.danaCardLabel}>Saldo Komisi Admin ({PLATFORM_FEE_PERCENT}%)</span>
                   <strong className={styles.danaCardValue}>Rp {adminWalletBal.toLocaleString('id-ID')}</strong>
-                  <span className={styles.danaCardSub}>Produk {PLATFORM_FEE_PERCENT}% + Carry {CARRIER_FEE_PERCENT}%</span>
+                  <span className={styles.danaCardSub}>Profit platform terkumpul</span>
                 </div>
               </div>
             </div>
 
-            {/* Alur dana explanation */}
             <div className={styles.danaFlowCard}>
-              <h3>📊 Alur Dana — Prinsip Escrow CampusRelove</h3>
-
-              {/* Produk flow */}
-              <h4 style={{ fontSize:'0.88rem', color:'#7C3AED', marginBottom:12 }}>🛍️ Pesanan Produk</h4>
+              <h3>📊 Alur Dana Preloved (Escrow)</h3>
               <div className={styles.danaFlow}>
                 <div className={styles.danaFlowStep}>
                   <div className={styles.danaFlowIcon} style={{ background: '#FEF3C7', color: '#D97706' }}>💳</div>
@@ -254,111 +416,33 @@ export default function AdminDashboard() {
                 <div className={styles.danaFlowStep}>
                   <div className={styles.danaFlowIcon} style={{ background: '#EDE9FE', color: '#7C3AED' }}>💸</div>
                   <div className={styles.danaFlowText}>
-                    <strong>4. Dana Cair</strong>
+                    <strong>4. Dana Cair Otomatis</strong>
                     <span>Penjual ({100-PLATFORM_FEE_PERCENT}%) + Admin ({PLATFORM_FEE_PERCENT}%)</span>
                   </div>
                 </div>
               </div>
-
-              {/* Carry flow */}
-              <h4 style={{ fontSize:'0.88rem', color:'#10B981', margin:'20px 0 12px' }}>🚚 Jasa Angkut (Relove-Carry)</h4>
-              <div className={styles.danaFlow}>
-                <div className={styles.danaFlowStep}>
-                  <div className={styles.danaFlowIcon} style={{ background: '#FEF3C7', color: '#D97706' }}>💳</div>
-                  <div className={styles.danaFlowText}>
-                    <strong>1. Pembeli Bayar Ongkir</strong>
-                    <span>Ongkir masuk Escrow Admin. Carrier saldo = Rp 0</span>
-                  </div>
-                </div>
-                <div className={styles.danaFlowArrow}>→</div>
-                <div className={styles.danaFlowStep}>
-                  <div className={styles.danaFlowIcon} style={{ background: '#DBEAFE', color: '#2563EB' }}>🚚</div>
-                  <div className={styles.danaFlowText}>
-                    <strong>2. Carrier Bekerja</strong>
-                    <span>Jemput → Muat → Antar → Tiba. Saldo masih Rp 0</span>
-                  </div>
-                </div>
-                <div className={styles.danaFlowArrow}>→</div>
-                <div className={styles.danaFlowStep}>
-                  <div className={styles.danaFlowIcon} style={{ background: '#D1FAE5', color: '#059669' }}>📸</div>
-                  <div className={styles.danaFlowText}>
-                    <strong>3. Upload Foto Bukti</strong>
-                    <span>Carrier upload foto → Pembeli bisa konfirmasi</span>
-                  </div>
-                </div>
-                <div className={styles.danaFlowArrow}>→</div>
-                <div className={styles.danaFlowStep}>
-                  <div className={styles.danaFlowIcon} style={{ background: '#EDE9FE', color: '#7C3AED' }}>💸</div>
-                  <div className={styles.danaFlowText}>
-                    <strong>4. Pembeli Konfirmasi → Cair</strong>
-                    <span>Carrier ({100-CARRIER_FEE_PERCENT}%) + Admin ({CARRIER_FEE_PERCENT}%)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Example table */}
               <div className={styles.danaExample}>
-                <h4>Contoh: Ongkir Rp 50.000</h4>
+                <h4>Contoh Transaksi Rp 100.000</h4>
                 <div className={styles.danaExampleTable}>
                   <div className={`${styles.danaExRow} ${styles.danaExHeader}`}>
-                    <span>Kondisi</span>
-                    <span>Escrow Admin</span>
-                    <span>Saldo Carrier</span>
-                    <span>Keterangan</span>
+                    <span>Kondisi</span><span>Saldo Admin</span><span>Saldo Penjual</span><span>Keterangan</span>
                   </div>
                   <div className={styles.danaExRow}>
-                    <span>Baru Pesan</span>
-                    <span className={styles.danaExEscrow}>Rp 50.000 (Ditahan)</span>
+                    <span>Baru Bayar</span>
+                    <span className={styles.danaExEscrow}>Rp 100.000 (Escrow)</span>
                     <span>Rp 0</span>
-                    <span>Carrier belum terima apa-apa</span>
+                    <span>Dana aman di tangan Admin</span>
                   </div>
                   <div className={styles.danaExRow}>
-                    <span>Carrier Bekerja</span>
-                    <span className={styles.danaExEscrow}>Rp 50.000 (Masih Ditahan)</span>
-                    <span>Rp 0</span>
-                    <span>Saldo carrier tetap 0 selama proses</span>
-                  </div>
-                  <div className={styles.danaExRow}>
-                    <span>Pembeli Konfirmasi</span>
-                    <span className={styles.danaExProfit}>Rp {Math.round(50000 * CARRIER_FEE_PERCENT / 100).toLocaleString('id-ID')} (komisi)</span>
-                    <span className={styles.danaExSeller}>Rp {(50000 - Math.round(50000 * CARRIER_FEE_PERCENT / 100)).toLocaleString('id-ID')}</span>
-                    <span>Escrow cair otomatis ke carrier & admin</span>
+                    <span>Pesanan Selesai</span>
+                    <span className={styles.danaExProfit}>Rp {Math.round(100000 * PLATFORM_FEE_PERCENT / 100).toLocaleString('id-ID')} (komisi)</span>
+                    <span className={styles.danaExSeller}>Rp {(100000 - Math.round(100000 * PLATFORM_FEE_PERCENT / 100)).toLocaleString('id-ID')}</span>
+                    <span>Admin ambil {PLATFORM_FEE_PERCENT}%, sisanya ke Penjual</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Carry Escrow History */}
-            <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>🚚 Riwayat Escrow Jasa Angkut</h3>
-            {carryEscrowHist.length === 0 ? (
-              <div className={styles.emptyState}><span>🚚</span><p>Belum ada transaksi jasa angkut</p></div>
-            ) : (
-              <div className={styles.walletHistory}>
-                {carryEscrowHist.map(h => (
-                  <div key={h.id} className={styles.walletRow}>
-                    <div className={styles.walletIcon}>
-                      {h.type === 'hold' ? '🔒' : h.type === 'release' ? '💸' : '↩️'}
-                    </div>
-                    <div className={styles.walletInfo}>
-                      <strong>{h.itemDescription}</strong>
-                      <span>
-                        {h.type === 'hold'    && `Ditahan dari ${h.buyerName}`}
-                        {h.type === 'release' && `Dicairkan ke ${h.carrierName}`}
-                        {h.type === 'refund'  && `Dikembalikan ke ${h.buyerName}`}
-                      </span>
-                    </div>
-                    <div className={`${styles.walletAmount} ${h.type === 'hold' ? '' : h.type === 'release' ? styles.walletRelease : styles.walletRefund}`}>
-                      {h.type === 'hold' ? '+' : '−'}Rp {h.amount.toLocaleString('id-ID')}
-                    </div>
-                    <div className={styles.walletDate}>
-                      {new Date(h.createdAt).toLocaleDateString('id-ID', { day:'numeric', month:'short' })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Product Komisi History */}
             <h3 className={styles.sectionTitle} style={{ marginTop: 32 }}>📜 Riwayat Komisi Platform</h3>
             {adminWalletHist.length === 0 ? (
               <div className={styles.emptyState}><span>💰</span><p>Belum ada komisi terkumpul</p></div>
@@ -366,10 +450,10 @@ export default function AdminDashboard() {
               <div className={styles.walletHistory}>
                 {adminWalletHist.map(h => (
                   <div key={h.id} className={styles.walletRow}>
-                    <div className={styles.walletIcon}>{h.type === 'carry_fee' ? '🚚' : '💰'}</div>
+                    <div className={styles.walletIcon}>💰</div>
                     <div className={styles.walletInfo}>
                       <strong>{h.productTitle}</strong>
-                      <span>{h.type === 'carry_fee' ? 'Komisi Jasa Angkut' : 'Komisi Produk'} · #{h.orderId.slice(-8).toUpperCase()}</span>
+                      <span>Komisi Produk · #{h.orderId.slice(-8).toUpperCase()}</span>
                     </div>
                     <div className={styles.walletAmount}>+Rp {h.amount.toLocaleString('id-ID')}</div>
                     <div className={styles.walletDate}>
@@ -437,87 +521,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Carry Orders Tab */}
-        {activeTab === 'carry' && (
-          <div>
-            <h3 className={styles.sectionTitle}>🚚 Semua Pesanan Jasa Angkut ({allCarryOrders.length})</h3>
-
-            {/* Carrier list */}
-            <div className={styles.carrierAdminList}>
-              <h4 style={{ fontSize:'0.9rem', fontWeight:700, color:'#1a1a2e', marginBottom:12 }}>
-                👤 Carrier Terdaftar ({carriers.length})
-              </h4>
-              {carriers.length === 0 ? (
-                <div className={styles.emptyState}><span>🚚</span><p>Belum ada carrier yang mendaftar</p></div>
-              ) : (
-                <div className={styles.carrierAdminGrid}>
-                  {carriers.map(c => {
-                    const busy = allCarryOrders.some(o => o.carrierId === c.id &&
-                      ['claimed','heading_to_seller','loading','in_transit','arrived'].includes(o.status))
-                    return (
-                      <div key={c.id} className={styles.carrierAdminCard}>
-                        <img src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`}
-                          alt={c.name} className={styles.carrierAdminAvatar} />
-                        <div className={styles.carrierAdminInfo}>
-                          <strong>{c.name}</strong>
-                          <span>{c.vehicleType || 'Motor'} · {c.serviceArea || '-'}</span>
-                          <span>⭐ {c.carrierRating || '–'} · {c.totalTrips || 0} trip</span>
-                        </div>
-                        <div className={styles.carrierAdminRight}>
-                          <span className={`${styles.carrierAdminStatus} ${busy ? styles.carrierBusy : styles.carrierFree}`}>
-                            {busy ? '🔴 Sibuk' : '🟢 Tersedia'}
-                          </span>
-                          <span className={styles.carrierAdminBalance}>
-                            Saldo: Rp {(c.balance || 0).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Carry orders list */}
-            <h4 style={{ fontSize:'0.9rem', fontWeight:700, color:'#1a1a2e', margin:'24px 0 12px' }}>
-              📋 Riwayat Pesanan Jasa Angkut
-            </h4>
-            {allCarryOrders.length === 0 ? (
-              <div className={styles.emptyState}><span>📭</span><p>Belum ada pesanan jasa angkut</p></div>
-            ) : (
-              <div className={styles.orderTable}>
-                {allCarryOrders.map(o => {
-                  const st = CARRY_STATUS[o.status] || CARRY_STATUS.available
-                  const netFee = Math.round((o.estimatedFee || 0) * (1 - (o.adminFeePercent || 10) / 100))
-                  return (
-                    <div key={o.carryOrderId} className={styles.orderRow}>
-                      <div className={styles.orderMeta}>
-                        <span className={styles.orderId}>#{o.carryOrderId.slice(-8).toUpperCase()}</span>
-                        <span className={styles.orderDate}>{new Date(o.createdAt).toLocaleDateString('id-ID')}</span>
-                      </div>
-                      <div className={styles.orderProduct}>
-                        <strong>{o.itemDescription}</strong>
-                        <span>Pembeli: {o.buyerName}</span>
-                        <span>{o.pickupPoint} → {o.dropoffPoint}</span>
-                        {o.carrierName && <span>Carrier: {o.carrierName}</span>}
-                        <span>Fee: Rp {(o.estimatedFee||0).toLocaleString('id-ID')} → Carrier Rp {netFee.toLocaleString('id-ID')}</span>
-                      </div>
-                      <span className={styles.orderStatus} style={{ color: st.color, background: st.bg }}>
-                        {st.label}
-                      </span>
-                      <div className={styles.orderAdminActions}>
-                        {o.status === 'completed' && (
-                          <span className={styles.autoReleasedBadge}>✅ Komisi Cair</span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Notifications Tab */}
         {activeTab === 'notifs' && (
           <div>
@@ -572,8 +575,8 @@ export default function AdminDashboard() {
                       <span>{u.name}</span>
                     </div>
                     <span className={styles.tableEmail}>{u.email}</span>
-                    <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : u.role === 'carrier' ? styles.roleCarrier : styles.roleBuyer}`}>
-                      {u.role === 'seller' ? '📦 Penjual' : u.role === 'carrier' ? '🚚 Carrier' : '🛍️ Pembeli'}
+                    <span className={`${styles.rolePill} ${u.role === 'seller' ? styles.roleSeller : styles.roleBuyer}`}>
+                      {u.role === 'seller' ? '📦 Penjual' : '🛍️ Pembeli'}
                     </span>
                     <span className={styles.tableUni}>{u.university || '-'}</span>
                     <span className={styles.tableDate}>{u.joinDate}</span>
@@ -680,6 +683,43 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* KTP / Selfie Photo Modal */}
+      {ktpModal && (
+        <div className={styles.modalOverlay} onClick={() => setKtpModal(null)}>
+          <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>{ktpModal.type === 'ktp' ? '🪪 Foto KTP / Identitas' : '🤳 Foto Selfie'}</h3>
+              <button className={styles.modalClose} onClick={() => setKtpModal(null)}>✕</button>
+            </div>
+            <div className={styles.modalUserMeta}>
+              <img src={ktpModal.user.avatar} alt="" className={styles.modalAvatar} />
+              <div>
+                <strong>{ktpModal.user.name}</strong>
+                <span>{ktpModal.user.email}</span>
+              </div>
+            </div>
+            <img
+              src={ktpModal.type === 'ktp' ? ktpModal.user.ktpPhoto : ktpModal.user.selfiePhoto}
+              alt={ktpModal.type}
+              className={styles.modalPhoto}
+            />
+            <div className={styles.modalActions}>
+              <button className={styles.btnApproveVerif} onClick={() => { handleApproveKtp(ktpModal.user.id); setKtpModal(null) }}>
+                ✅ Setujui Identitas
+              </button>
+              <button className={styles.btnRejectVerif} onClick={() => {
+                const note = prompt('Alasan penolakan?', 'Foto identitas tidak jelas')
+                handleRejectKtp(ktpModal.user.id, note)
+                setKtpModal(null)
+              }}>
+                ❌ Tolak
+              </button>
+              <button className={styles.btnOutline} onClick={() => setKtpModal(null)}>Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

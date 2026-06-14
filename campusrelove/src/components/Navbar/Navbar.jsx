@@ -16,7 +16,6 @@ export default function Navbar() {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/browse', label: 'Browse' },
-    { to: '/relove-carry', label: 'Preloved-Carry 🚚' },
   ]
 
   const handleLogout = () => {
@@ -26,10 +25,9 @@ export default function Navbar() {
   }
 
   const roleLabel = {
-    admin:   '🛡️ Admin',
-    seller:  '📦 Penjual',
-    buyer:   '🛍️ Pembeli',
-    carrier: '🚚 Carrier',
+    admin:  '🛡️ Admin',
+    seller: '📦 Penjual',
+    buyer:  '🛍️ Pembeli',
   }
 
   const unreadNotif = user ? getUnreadCount(user.id) : 0
@@ -58,14 +56,14 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Show Dashboard only for seller/admin/carrier */}
-          {user && (user.role === 'seller' || user.role === 'admin' || user.role === 'carrier') && (
+          {/* Show Dashboard only for seller/admin */}
+          {user && (user.role === 'seller' || user.role === 'admin') && (
             <Link
-              to={user.role === 'admin' ? '/admin' : user.role === 'carrier' ? '/carrier' : '/dashboard'}
-              className={`${styles.navLink} ${(location.pathname === '/dashboard' || location.pathname === '/admin' || location.pathname === '/carrier') ? styles.active : ''}`}
+              to={user.role === 'admin' ? '/admin' : '/dashboard'}
+              className={`${styles.navLink} ${(location.pathname === '/dashboard' || location.pathname === '/admin') ? styles.active : ''}`}
               onClick={() => setMenuOpen(false)}
             >
-              {user.role === 'admin' ? '🛡️ Admin' : user.role === 'carrier' ? '🚚 Carrier' : '📊 Dashboard'}
+              {user.role === 'admin' ? '🛡️ Admin' : '📊 Dashboard'}
             </Link>
           )}
 
@@ -164,11 +162,6 @@ export default function Navbar() {
                     {user.role === 'seller' && (
                       <Link to="/dashboard" className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setMenuOpen(false) }}>
                         📊 Dashboard Penjual
-                      </Link>
-                    )}
-                    {user.role === 'carrier' && (
-                      <Link to="/carrier" className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setMenuOpen(false) }}>
-                        🚚 Carrier Dashboard
                       </Link>
                     )}
                     {user.role !== 'admin' && (
