@@ -22,15 +22,22 @@ function OrderCard({ order, role, onAction }) {
   const { PLATFORM_FEE_PERCENT } = useOrders()
   const product = allProducts.find(p => p.id === order.productId)
   const st = ORDER_STATUS[order.status] || ORDER_STATUS.pending_payment
-  const [shipForm, setShipForm]     = useState({ method: 'cod', resi: '', codSchedule: '' })
-  const [showShip, setShowShip]     = useState(false)
+  const [shipForm, setShipForm]         = useState({ method: 'cod', resi: '', codSchedule: '' })
+  const [showShip, setShowShip]         = useState(false)
   const [rejectReason, setRejectReason] = useState('')
-  const [showReject, setShowReject] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [showReject, setShowReject]     = useState(false)
+  const [showConfirm, setShowConfirm]   = useState(false)
+  const [showCancel, setShowCancel]     = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
 
   const feePercent  = order.platformFeePercent ?? PLATFORM_FEE_PERCENT
   const platformFee = order.platformFee  ?? Math.round(order.price * feePercent / 100)
   const sellerAmt   = order.sellerAmount ?? (order.price - platformFee)
+
+  // Status yang masih bisa dibatalkan
+  const buyerCanCancel  = role === 'buyer'  && ['pending_payment', 'paid'].includes(order.status)
+  const sellerCanCancel = role === 'seller' && ['paid', 'processing'].includes(order.status)
+  const canCancel = buyerCanCancel || sellerCanCancel
 
   return (
     <div className={styles.orderCard}>
@@ -171,6 +178,49 @@ function OrderCard({ order, role, onAction }) {
           </>
         )}
 
+        {/* CANCEL: pembeli (pending/paid) atau penjual (paid/processing) */}
+        {canCancel && !showCancel && (
+          <button className={styles.btnCancel} onClick={() => setShowCancel(true)}>
+            🚫 Batalkan Pesanan
+          </button>
+        )}
+        {canCancel && showCancel && (
+          <div className={styles.cancelBox}>
+            <p className={styles.cancelTitle}>⚠️ Batalkan Pesanan?</p>
+            {role === 'buyer' && order.status === 'paid' && (
+              <p className={styles.cancelWarning}>
+                Dana Rp {order.price.toLocaleString('id-ID')} akan diproses refund ke kamu.
+              </p>
+            )}
+            {role === 'seller' && (
+              <p className={styles.cancelWarning}>
+                Pembeli akan mendapat notifikasi dan dana dikembalikan.
+              </p>
+            )}
+            <input
+              className={styles.cancelInput}
+              placeholder="Alasan pembatalan (wajib)..."
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+            />
+            <div className={styles.cancelActions}>
+              <button
+                className={styles.btnRed}
+                disabled={!cancelReason.trim()}
+                onClick={() => {
+                  onAction('cancelOrder', order.orderId, cancelReason, role)
+                  setShowCancel(false)
+                }}
+              >
+                ✅ Ya, Batalkan
+              </button>
+              <button className={styles.btnOutline} onClick={() => { setShowCancel(false); setCancelReason('') }}>
+                Kembali
+              </button>
+            </div>
+          </div>
+        )}
+
         <Link to={`/product/${order.productId}`} className={styles.btnOutline}>👁 Lihat Produk</Link>
       </div>
     </div>
@@ -180,7 +230,7 @@ function OrderCard({ order, role, onAction }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function OrdersPage() {
   const { user } = useAuth()
-  const { getOrdersByBuyer, getOrdersBySeller, processOrder, rejectOrder, shipOrder, confirmDelivery } = useOrders()
+  const { getOrdersByBuyer, getOrdersBySeller, processOrder, rejectOrder, shipOrder, confirmDelivery, cancelOrder } = useOrders()
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
 
@@ -202,11 +252,12 @@ export default function OrdersPage() {
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter)
 
-  const handleAction = (action, orderId, extra) => {
+  const handleAction = (action, orderId, extra, extra2) => {
     if (action === 'processOrder')    processOrder(orderId)
     if (action === 'rejectOrder')     rejectOrder(orderId, extra)
     if (action === 'shipOrder')       shipOrder(orderId, extra)
     if (action === 'confirmDelivery') confirmDelivery(orderId)
+    if (action === 'cancelOrder')     cancelOrder(orderId, extra, extra2)
   }
 
   const filterTabs = [

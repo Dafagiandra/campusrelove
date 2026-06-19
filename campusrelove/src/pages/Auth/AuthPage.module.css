@@ -134,6 +134,8 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
   width: 100%;
   max-width: 420px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .formHeader {
@@ -213,6 +215,24 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* Prevent overflow inside grid cells */
+.fieldRow .field {
+  min-width: 0;
+}
+
+.fieldRow .field label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.fieldRow .field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .field {
@@ -430,9 +450,10 @@
 /* ── Step Progress Bar ─────────────────────────────────────────────────── */
 .stepBar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 44px; /* extra space for labels below circles */
+  padding-bottom: 8px;
   gap: 0;
 }
 
@@ -444,12 +465,12 @@
 }
 
 .stepCircle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #e5e7eb;
   color: #9ca3af;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -457,6 +478,7 @@
   flex-shrink: 0;
   transition: all 0.3s;
   z-index: 1;
+  position: relative;
 }
 
 .stepItem.stepActive .stepCircle {
@@ -471,24 +493,27 @@
 }
 
 .stepLabel {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: #9ca3af;
   position: absolute;
-  top: 36px;
+  top: 40px;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .stepItem.stepActive .stepLabel { color: #7C3AED; }
 .stepItem.stepDone .stepLabel { color: #10B981; }
 
 .stepLine {
-  width: 60px;
+  width: 56px;
   height: 3px;
   background: #e5e7eb;
-  margin: 0 4px;
+  margin: 0 6px;
+  margin-top: 16px; /* align with circle center */
+  flex-shrink: 0;
   transition: background 0.3s;
 }
 
@@ -582,7 +607,8 @@
 
 .cameraVideo {
   width: 100%;
-  max-height: 220px;
+  min-height: 260px;
+  max-height: 300px;
   object-fit: cover;
   display: block;
   border-radius: 16px;
@@ -608,36 +634,51 @@
 
 .cameraActions {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   gap: 12px;
+  padding: 0 12px;
 }
 
 .btnCapture {
-  padding: 10px 24px;
+  padding: 12px 28px;
   background: #10B981;
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   font-family: 'Poppins', sans-serif;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.5);
+  transition: all 0.2s;
+  min-width: 140px;
+}
+.btnCapture:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+.btnCapture:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #6b7280;
+  box-shadow: none;
 }
 
 .btnCancelCamera {
-  padding: 10px 16px;
-  background: rgba(255,255,255,0.2);
+  padding: 12px 18px;
+  background: rgba(255,255,255,0.15);
   color: white;
-  border: 2px solid rgba(255,255,255,0.5);
-  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Poppins', sans-serif;
+  backdrop-filter: blur(4px);
 }
 
 /* Verifying spinner */
@@ -757,4 +798,79 @@
   border-radius: 10px;
   padding: 12px;
   line-height: 1.5;
+}
+
+/* ── Verification Rejection Banner (global) ─────────────────────────────── */
+.verifBanner {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  color: white;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(220,38,38,0.4);
+  flex-wrap: wrap;
+}
+
+.verifBannerIcon { font-size: 1.4rem; flex-shrink: 0; }
+
+.verifBannerBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.verifBannerBody strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.verifBannerBody p {
+  font-size: 0.78rem;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.verifBannerBtn {
+  background: white;
+  color: #991b1b;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.verifBannerBtn:hover { background: #fee2e2; }
+
+.verifBannerClose {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.verifBannerClose:hover { color: white; }
+
+/* ── Rejection Alert (re-verify form) ───────────────────────────────────── */
+.rejectionAlert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: #991b1b;
+  line-height: 1.5;
+  margin-bottom: 20px;
 }

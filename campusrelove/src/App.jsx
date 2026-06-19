@@ -8,11 +8,12 @@ import Home from './pages/Home/Home'
 import Browse from './pages/Browse/Browse'
 import ProductDetail from './pages/ProductDetail/ProductDetail'
 import SellerDashboard from './pages/SellerDashboard/SellerDashboard'
-import AuthPage from './pages/Auth/AuthPage'
+import AuthPage, { VerificationBanner } from './pages/Auth/AuthPage'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import CheckoutPage from './pages/Checkout/CheckoutPage'
 import OrdersPage from './pages/Orders/OrdersPage'
 import ChatPage from './pages/Chat/ChatPage'
+import ProfilePage from './pages/Profile/ProfilePage'
 import './App.css'
 
 function AdminLayout() {
@@ -23,6 +24,7 @@ function MainLayout() {
   return (
     <div className="app">
       <Navbar />
+      <VerificationBanner />
       <main className="main-content">
         <Routes>
           <Route path="/"             element={<Home />} />
@@ -32,6 +34,7 @@ function MainLayout() {
           <Route path="/orders"       element={<OrdersPage />} />
           <Route path="/chat"         element={<ChatPage />} />
           <Route path="/dashboard"    element={<SellerDashboard />} />
+          <Route path="/profile"      element={<ProfilePage />} />
           <Route path="/auth"         element={<AuthPage />} />
         </Routes>
       </main>

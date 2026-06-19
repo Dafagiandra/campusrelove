@@ -1,141 +1,148 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { authAPI } from '../services/api'
 
 const AuthContext = createContext(null)
 
-// Akun admin default
-const ADMIN_ACCOUNTS = [
-  { id: 'admin1', email: 'admin@preloved.id', password: 'admin123', name: 'Admin Preloved', role: 'admin' },
-  // Fallback email lama agar tidak error jika ada yang masih pakai
-  { id: 'admin1', email: 'admin@campusrelove.id', password: 'admin123', name: 'Admin Preloved', role: 'admin' },
-]
-
-// Simulasi database user di localStorage
-const getStoredUsers = () => {
-  try {
-    return JSON.parse(localStorage.getItem('cr_users') || '[]')
-  } catch {
-    return []
-  }
-}
-
-const saveUsers = (users) => {
-  localStorage.setItem('cr_users', JSON.stringify(users))
-}
+const TOKEN_KEY   = 'cr_token'
+const SESSION_KEY = 'cr_session'
 
 const getStoredSession = () => {
-  try {
-    return JSON.parse(localStorage.getItem('cr_session') || 'null')
-  } catch {
-    return null
-  }
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') }
+  catch { return null }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getStoredSession)
+  const [user,    setUser]    = useState(getStoredSession)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
 
-  // Simpan session ke localStorage setiap kali user berubah
+  // On mount: if token exists, refresh user data from /api/auth/me
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return
+
+    ;(async () => {
+      try {
+        const data = await authAPI.me()
+        if (data.success && data.user) {
+          const mapped = mapUser(data.user)
+          setUser(mapped)
+          localStorage.setItem(SESSION_KEY, JSON.stringify(mapped))
+        }
+      } catch {
+        // Token expired or backend offline — clear stale token
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(SESSION_KEY)
+        setUser(null)
+      }
+    })()
+  }, [])
+
+  // Keep session in sync so page reload is instant
   useEffect(() => {
     if (user) {
-      localStorage.setItem('cr_session', JSON.stringify(user))
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user))
     } else {
-      localStorage.removeItem('cr_session')
+      localStorage.removeItem(SESSION_KEY)
     }
   }, [user])
 
-  const login = (email, password) => {
+  /** Map snake_case DB fields → camelCase to keep components unchanged */
+  const mapUser = (u) => ({
+    id:                 u.id,
+    name:               u.name,
+    email:              u.email,
+    role:               u.role,
+    city:               u.city               || '',
+    phone:              u.phone              || '',
+    avatar:             u.avatar             || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.name)}`,
+    balance:            Number(u.balance)    || 0,
+    rating:             Number(u.rating)     || 0,
+    totalSales:         u.total_sales        ?? u.totalSales ?? 0,
+    verified:           Boolean(u.verified),
+    verificationStatus: u.verification_status ?? u.verificationStatus ?? 'pending',
+    rejectionNote:      u.rejection_note     ?? u.rejectionNote ?? null,
+    joinDate:           u.join_date          ?? u.joinDate ?? '',
+  })
+
+  const login = async (email, password) => {
     setLoading(true)
     setError('')
-
-    // Cek admin
-    const adminAccount = ADMIN_ACCOUNTS.find(
-      (a) => a.email === email && a.password === password
-    )
-    if (adminAccount) {
-      const { password: _, ...safeAdmin } = adminAccount
-      setUser(safeAdmin)
+    try {
+      const data = await authAPI.login({ email, password })
+      if (data.success) {
+        localStorage.setItem(TOKEN_KEY, data.token)
+        const mapped = mapUser(data.user)
+        setUser(mapped)
+        setLoading(false)
+        return { success: true, role: mapped.role }
+      }
+      setError(data.message || 'Login gagal')
       setLoading(false)
-      return { success: true, role: 'admin' }
-    }
-
-    // Cek user biasa
-    const users = getStoredUsers()
-    const found = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    )
-
-    if (found) {
-      const { password: _, ...safeUser } = found
-      setUser(safeUser)
+      return { success: false }
+    } catch (err) {
+      const msg = err.message?.includes('fetch')
+        ? 'Tidak dapat terhubung ke server. Pastikan backend aktif.'
+        : (err.message || 'Login gagal')
+      setError(msg)
       setLoading(false)
-      return { success: true, role: found.role }
+      return { success: false }
     }
-    setError('Email atau password salah')
-    setLoading(false)
-    return { success: false }
   }
 
-  const register = ({ name, email, password, role, city, phone,
-                       ktpPhoto, selfiePhoto, verificationStatus }) => {
+  const register = async ({ name, email, password, role, city, phone,
+                             ktpPhoto, selfiePhoto, verificationStatus }) => {
     setLoading(true)
     setError('')
-
-    const users = getStoredUsers()
-
-    if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      setError('Email sudah terdaftar')
+    try {
+      const data = await authAPI.register({
+        name, email, password, role,
+        city:        city        || undefined,
+        phone:       phone       || undefined,
+        ktpPhoto:    ktpPhoto    || undefined,
+        selfiePhoto: selfiePhoto || undefined,
+      })
+      if (data.success) {
+        localStorage.setItem(TOKEN_KEY, data.token)
+        const mapped = mapUser(data.user)
+        setUser(mapped)
+        setLoading(false)
+        return { success: true, role: mapped.role }
+      }
+      setError(data.message || 'Registrasi gagal')
       setLoading(false)
-      return { success: false, message: 'Email sudah terdaftar' }
+      return { success: false, message: data.message }
+    } catch (err) {
+      const msg = err.message?.includes('fetch')
+        ? 'Tidak dapat terhubung ke server. Pastikan backend aktif.'
+        : (err.message || 'Registrasi gagal')
+      setError(msg)
+      setLoading(false)
+      return { success: false, message: msg }
     }
-
-    const newUser = {
-      id: `u${Date.now()}`,
-      name,
-      email,
-      password,
-      role,
-      city:   city  || '',
-      phone:  phone || '',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
-      rating: 0,
-      totalSales: 0,
-      reviews: [],
-      verified: false,              // admin yang approve setelah cek KTP
-      balance: 0,
-      joinDate: new Date().toISOString().split('T')[0],
-      // Identity verification data
-      ktpPhoto:           ktpPhoto           || null,
-      selfiePhoto:        selfiePhoto        || null,
-      verificationStatus: verificationStatus || 'pending',  // pending | approved | rejected
-      verificationDate:   null,
-    }
-
-    users.push(newUser)
-    saveUsers(users)
-
-    const { password: _, ...safeUser } = newUser
-    setUser(safeUser)
-    setLoading(false)
-    return { success: true, role }
   }
 
   const logout = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(SESSION_KEY)
     setUser(null)
     setError('')
   }
 
-  const updateProfile = (updates) => {
+  const updateProfile = async (updates) => {
     if (!user) return
-    const updatedUser = { ...user, ...updates }
-    setUser(updatedUser)
-
-    // Update di "database"
-    const users = getStoredUsers()
-    const idx = users.findIndex((u) => u.id === user.id)
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates }
-      saveUsers(users)
+    try {
+      const data = await authAPI.update(updates)
+      if (data.success && data.user) {
+        const mapped = mapUser(data.user)
+        setUser(mapped)
+        return { success: true }
+      }
+      return { success: false }
+    } catch {
+      // Optimistic update even when offline
+      setUser((prev) => ({ ...prev, ...updates }))
+      return { success: false, offline: true }
     }
   }
 

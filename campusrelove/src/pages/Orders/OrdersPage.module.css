@@ -467,3 +467,77 @@
   .ratingStars { gap: 6px; }
   .ratingStar { font-size: 1.6rem; }
 }
+
+/* ── Cancel Order UI ─────────────────────────────────────────────────────── */
+.btnCancel {
+  padding: 10px 20px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1.5px solid #fed7aa;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Poppins', sans-serif;
+}
+.btnCancel:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+  transform: translateY(-1px);
+}
+
+.cancelBox {
+  border: 2px solid #fed7aa;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff7ed;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cancelTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #c2410c;
+  margin: 0;
+}
+
+.cancelWarning {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cancelInput {
+  padding: 10px 14px;
+  border: 1.5px solid #fed7aa;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cancelInput:focus { border-color: #f97316; }
+
+.cancelActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cancelActions .btnRed:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .cancelActions { flex-direction: column; }
+  .btnCancel { width: 100%; }
+}

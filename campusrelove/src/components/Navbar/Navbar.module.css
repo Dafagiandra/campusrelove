@@ -131,6 +131,21 @@
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
 
+.btnSellLocked {
+  background: #e5e7eb;
+  color: #9ca3af;
+  padding: 9px 18px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+  margin-left: 4px;
+  white-space: nowrap;
+  cursor: not-allowed;
+  display: inline-block;
+  border: 2px dashed #d1d5db;
+}
+
 /* User menu */
 .userMenu {
   position: relative;

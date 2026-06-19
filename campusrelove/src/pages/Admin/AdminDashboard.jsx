@@ -49,15 +49,40 @@ export default function AdminDashboard() {
     )
     saveStoredUsers(updated)
     setUsers(updated)
+    // Push notification to user
+    const notifs = JSON.parse(localStorage.getItem('cr_notifications') || '[]')
+    notifs.unshift({
+      notifId: `n${Date.now()}`,
+      recipientId: userId,
+      type: 'verif',
+      message: '✅ Identitas kamu sudah diverifikasi oleh Admin! Akun kamu kini aktif penuh.',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    })
+    localStorage.setItem('cr_notifications', JSON.stringify(notifs))
   }
 
   const handleRejectKtp = (userId, note) => {
+    const rejectionNote = note || 'Identitas tidak valid'
     const updated = getStoredUsers().map(u =>
-      u.id === userId ? { ...u, verified: false, verificationStatus: 'rejected', rejectionNote: note || 'Identitas tidak valid', verificationDate: new Date().toISOString() } : u
+      u.id === userId
+        ? { ...u, verified: false, verificationStatus: 'rejected', rejectionNote, verificationDate: new Date().toISOString() }
+        : u
     )
     saveStoredUsers(updated)
     setUsers(updated)
     setRejectNote('')
+    // Push notification to user with rejection reason
+    const notifs = JSON.parse(localStorage.getItem('cr_notifications') || '[]')
+    notifs.unshift({
+      notifId: `n${Date.now()}`,
+      recipientId: userId,
+      type: 'verif',
+      message: `❌ Verifikasi identitas kamu ditolak. Alasan: ${rejectionNote}. Silakan upload ulang dokumen kamu.`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    })
+    localStorage.setItem('cr_notifications', JSON.stringify(notifs))
   }
 
   const handleLogout = () => {

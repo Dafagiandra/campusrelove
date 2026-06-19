@@ -51,6 +51,28 @@ export default function CheckoutPage() {
     )
   }
 
+  // Block rejected users
+  if (user.verificationStatus === 'rejected') {
+    return (
+      <div className={styles.center}>
+        <div className={styles.centerIcon}>🔒</div>
+        <h2>Akun Dibatasi</h2>
+        <p style={{ marginBottom: 8 }}>Verifikasi identitasmu ditolak oleh admin.</p>
+        {user.rejectionNote && (
+          <p style={{ fontSize: '0.85rem', color: '#dc2626', marginBottom: 16 }}>
+            Alasan: <strong>{user.rejectionNote}</strong>
+          </p>
+        )}
+        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: 20 }}>
+          Upload ulang foto KTP dan selfie untuk mengaktifkan kembali akun kamu.
+        </p>
+        <Link to="/auth" state={{ mode: 'reverify' }} className={styles.btnPrimary}>
+          🔄 Verifikasi Ulang
+        </Link>
+      </div>
+    )
+  }
+
   if (!product) {
     return (
       <div className={styles.center}>

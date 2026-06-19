@@ -21,3 +21,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables — jangan di-commit ke git!
+.env
+.env.local
+.env.production
+
+# Backend
+backend/.env
+backend/node_modules

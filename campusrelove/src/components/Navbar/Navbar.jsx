@@ -159,6 +159,9 @@ export default function Navbar() {
                       </div>
                     </div>
                     <div className={styles.dropdownDivider}></div>
+                    <Link to="/profile" className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setMenuOpen(false) }}>
+                      👤 Profil Saya
+                    </Link>
                     {user.role === 'seller' && (
                       <Link to="/dashboard" className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setMenuOpen(false) }}>
                         📊 Dashboard Penjual
@@ -194,12 +197,18 @@ export default function Navbar() {
 
           {/* Sell button - only for logged in sellers */}
           {user && user.role === 'seller' && (
-            <Link to="/dashboard" className={styles.btnSell} onClick={() => setMenuOpen(false)}>
-              + Jual Barang
-            </Link>
+            user.verificationStatus === 'rejected' ? (
+              <span className={styles.btnSellLocked} title="Akun dibatasi — verifikasi ulang identitas">
+                🔒 Jual Barang
+              </span>
+            ) : (
+              <Link to="/dashboard" className={styles.btnSell} onClick={() => setMenuOpen(false)}>
+                + Jual Barang
+              </Link>
+            )
           )}
           {!user && (
-            <Link to="/auth" state={{ mode: 'register' }} className={styles.btnSell} onClick={() => setMenuOpen(false)}>
+            <Link to="/auth" state={{ mode: 'register', role: 'seller' }} className={styles.btnSell} onClick={() => setMenuOpen(false)}>
               + Jual Barang
             </Link>
           )}

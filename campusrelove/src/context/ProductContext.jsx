@@ -1,75 +1,134 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import { products as defaultProducts } from '../data/products'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { productAPI } from '../services/api'
+import { useAuth } from './AuthContext'
 
 const ProductContext = createContext(null)
 
-const STORAGE_KEY = 'cr_products'
+/** Map snake_case DB row → camelCase expected by components */
+const mapProduct = (p) => ({
+  id:            p.id,
+  title:         p.title,
+  description:   p.description   || '',
+  price:         Number(p.price) || 0,
+  originalPrice: p.original_price  != null ? Number(p.original_price)  : (p.originalPrice != null ? Number(p.originalPrice) : null),
+  category:      p.category      || '',
+  condition:     p.condition     || '',
+  conditionScore: p.condition_score ?? p.conditionScore ?? 75,
+  sellerId:      p.seller_id     ?? p.sellerId,
+  images:        parseJSON(p.images,  []),
+  tags:          parseJSON(p.tags,    []),
+  views:         p.views         || 0,
+  isHot:         Boolean(p.is_hot         ?? p.isHot),
+  isNew:         Boolean(p.is_new         ?? p.isNew),
+  isAlmostSold:  Boolean(p.is_almost_sold ?? p.isAlmostSold),
+  isSold:        Boolean(p.is_sold        ?? p.isSold),
+  postedDate:    p.created_at ? p.created_at.split('T')[0] : (p.postedDate || ''),
+  stock:         p.stock ?? 1,
+  meetupPoints:  parseJSON(p.meetupPoints, ['Mall Terdekat', 'Stasiun', 'Kampus']),
+})
 
-// Ambil produk user dari localStorage
-const getStoredProducts = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  } catch {
-    return []
-  }
-}
-
-const saveProducts = (products) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
+function parseJSON(value, fallback) {
+  if (Array.isArray(value)) return value
+  if (value == null) return fallback
+  try { return JSON.parse(value) } catch { return fallback }
 }
 
 export function ProductProvider({ children }) {
-  // userProducts = produk yang diupload penjual (disimpan di localStorage)
-  const [userProducts, setUserProducts] = useState(getStoredProducts)
+  const { user } = useAuth()
+  const [allProducts, setAllProducts] = useState([])
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
 
-  // allProducts = gabungan produk bawaan + produk user
-  const allProducts = [...defaultProducts, ...userProducts]
-
-  const addProduct = (product) => {
-    const newProduct = {
-      ...product,
-      id: `up_${Date.now()}`,
-      views: 0,
-      isHot: false,
-      isAlmostSold: false,
-      isNew: true,
-      postedDate: new Date().toISOString().split('T')[0],
-      stock: 1,
-      tags: product.tags || [],
-      meetupPoints: product.meetupPoints || ['Perpustakaan Pusat', 'Gerbang Utama'],
+  /** Fetch all products from backend */
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await productAPI.getAll()
+      if (data.success) {
+        setAllProducts(data.products.map(mapProduct))
+      }
+    } catch (err) {
+      setError(
+        err.message?.includes('fetch')
+          ? 'Tidak dapat terhubung ke server.'
+          : (err.message || 'Gagal memuat produk')
+      )
+    } finally {
+      setLoading(false)
     }
-    const updated = [newProduct, ...userProducts]
-    setUserProducts(updated)
-    saveProducts(updated)
-    return newProduct
+  }, [])
+
+  // Load products on mount
+  useEffect(() => { fetchProducts() }, [fetchProducts])
+
+  /** Products belonging to current logged-in user */
+  const userProducts = user
+    ? allProducts.filter((p) => p.sellerId === user.id)
+    : []
+
+  const addProduct = async (product) => {
+    try {
+      const data = await productAPI.create({
+        title:          product.title,
+        description:    product.description || '',
+        price:          product.price,
+        originalPrice:  product.originalPrice || null,
+        category:       product.category || null,
+        condition:      product.condition || null,
+        conditionScore: product.conditionScore || 75,
+        images:         product.images || [],
+        tags:           product.tags   || [],
+      })
+      if (data.success) {
+        const mapped = mapProduct(data.product)
+        setAllProducts((prev) => [mapped, ...prev])
+        return mapped
+      }
+      throw new Error(data.message || 'Gagal menambah produk')
+    } catch (err) {
+      throw err
+    }
   }
 
-  const deleteProduct = (productId) => {
-    const updated = userProducts.filter((p) => p.id !== productId)
-    setUserProducts(updated)
-    saveProducts(updated)
+  const deleteProduct = async (productId) => {
+    try {
+      await productAPI.delete(productId)
+      setAllProducts((prev) => prev.filter((p) => p.id !== productId))
+    } catch (err) {
+      throw err
+    }
   }
 
+  /** updateProduct: optimistic local update */
   const updateProduct = (productId, updates) => {
-    const updated = userProducts.map((p) =>
-      p.id === productId ? { ...p, ...updates } : p
+    setAllProducts((prev) =>
+      prev.map((p) => p.id === productId ? { ...p, ...updates } : p)
     )
-    setUserProducts(updated)
-    saveProducts(updated)
   }
 
-  const getSellerProducts = (sellerId) => {
-    return allProducts.filter((p) => p.sellerId === sellerId)
-  }
+  const getSellerProducts = useCallback(async (sellerId) => {
+    try {
+      const data = await productAPI.getBySeller(sellerId)
+      if (data.success) return data.products.map(mapProduct)
+      return []
+    } catch {
+      // Fallback: filter from already-loaded products
+      return allProducts.filter((p) => p.sellerId === sellerId)
+    }
+  }, [allProducts])
 
   return (
     <ProductContext.Provider value={{
       allProducts,
       userProducts,
+      loading,
+      error,
       addProduct,
       deleteProduct,
       updateProduct,
       getSellerProducts,
+      refreshProducts: fetchProducts,
     }}>
       {children}
     </ProductContext.Provider>

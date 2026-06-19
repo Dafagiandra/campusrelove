@@ -489,6 +489,28 @@ export default function SellerDashboard() {
     )
   }
 
+  // Block if verification rejected
+  if (user.verificationStatus === 'rejected') {
+    return (
+      <div className={styles.accessDenied}>
+        <div className={styles.accessIcon}>🔒</div>
+        <h2>Akun Dibatasi</h2>
+        <p>Verifikasi identitasmu ditolak. Kamu tidak bisa berjualan sampai verifikasi ulang disetujui.</p>
+        {user.rejectionNote && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', margin: '12px 0', fontSize: '0.85rem', color: '#991b1b', maxWidth: 400 }}>
+            <strong>Alasan penolakan:</strong> {user.rejectionNote}
+          </div>
+        )}
+        <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '8px 0 20px' }}>
+          Upload ulang foto KTP dan selfie yang lebih jelas untuk mengaktifkan kembali akun kamu.
+        </p>
+        <button className={styles.ktmBtn} onClick={() => navigate('/auth', { state: { mode: 'reverify' } })}>
+          🔄 Verifikasi Ulang Sekarang
+        </button>
+      </div>
+    )
+  }
+
   // Baca verified langsung dari localStorage agar tidak reset saat navigasi
   const isVerified = (() => {
     if (user.verified) return true

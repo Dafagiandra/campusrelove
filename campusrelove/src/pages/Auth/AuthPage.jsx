@@ -1,9 +1,48 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import styles from './AuthPage.module.css'
 
-// ─── Login Form ───────────────────────────────────────────────────────────────
+// ─── Global Verification Banner ──────────────────────────────────────────────
+// Shown on all pages when user's verification is rejected
+export function VerificationBanner() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [dismissed, setDismissed] = useState(false)
+
+  if (!user || user.role === 'admin') return null
+  if (user.verificationStatus === 'approved') return null
+  if (user.verificationStatus !== 'rejected') return null
+  if (dismissed) return null
+
+  return (
+    <div className={styles.verifBanner}>
+      <div className={styles.verifBannerIcon}>⚠️</div>
+      <div className={styles.verifBannerBody}>
+        <strong>Verifikasi Identitas Ditolak</strong>
+        <p>
+          {user.rejectionNote
+            ? `Alasan: ${user.rejectionNote}`
+            : 'Foto identitas atau selfie tidak memenuhi syarat.'}
+          {' '}Fitur jual & beli terkunci sampai verifikasi ulang selesai.
+        </p>
+      </div>
+      <button className={styles.verifBannerBtn} onClick={() => navigate('/auth', { state: { mode: 'reverify' } })}>
+        🔄 Upload Ulang
+      </button>
+      <button className={styles.verifBannerClose} onClick={() => setDismissed(true)}>✕</button>
+    </div>
+  )
+}
+
+// ─── Hook: cek apakah user boleh bertransaksi ─────────────────────────────────
+export function useVerificationGuard() {
+  const { user } = useAuth()
+  const isRejected = user?.verificationStatus === 'rejected'
+  const isPending  = user?.verificationStatus === 'pending' && !user?.verified
+  const isVerified = user?.verificationStatus === 'approved' || user?.verified
+  return { isRejected, isPending, isVerified }
+}
 function LoginForm({ onSwitch }) {
   const { login, loading, error, setError } = useAuth()
   const navigate = useNavigate()
@@ -66,43 +105,70 @@ function LoginForm({ onSwitch }) {
 function FaceCapture({ onCapture, captured }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const streamRef = useRef(null)
   const [streaming, setStreaming] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verified, setVerified] = useState(false)
 
   const startCamera = useCallback(async () => {
     setCameraError('')
+    setVideoReady(false)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+      })
+      streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
-        setStreaming(true)
+        // Wait for metadata then play
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => {
+            setStreaming(true)
+            setVideoReady(true)
+          }).catch(() => {
+            setStreaming(true)
+            setVideoReady(true)
+          })
+        }
       }
     } catch {
-      setCameraError('Tidak bisa akses kamera. Pastikan izin kamera diberikan atau upload foto selfie.')
+      setCameraError('Tidak bisa akses kamera. Pastikan izin kamera diberikan atau gunakan Upload Foto.')
     }
   }, [])
 
   const stopCamera = useCallback(() => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(t => t.stop())
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+    if (videoRef.current) {
       videoRef.current.srcObject = null
     }
     setStreaming(false)
+    setVideoReady(false)
   }, [])
 
   const takePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return
-    const canvas = canvasRef.current
     const video = videoRef.current
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    canvas.getContext('2d').drawImage(video, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+
+    // Use actual video dimensions or fallback
+    const w = video.videoWidth  || 640
+    const h = video.videoHeight || 480
+    canvas.width  = w
+    canvas.height = h
+
+    const ctx = canvas.getContext('2d')
+    // Mirror the image to match what user sees
+    ctx.translate(w, 0)
+    ctx.scale(-1, 1)
+    ctx.drawImage(video, 0, 0, w, h)
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
     stopCamera()
-    // Simulate face verification (2 seconds)
     setVerifying(true)
     setTimeout(() => {
       setVerifying(false)
@@ -152,6 +218,9 @@ function FaceCapture({ onCapture, captured }) {
 
   return (
     <div className={styles.faceCapture}>
+      {/* Hidden canvas for capture */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
       {!streaming ? (
         <div className={styles.faceCaptureIdle}>
           <div className={styles.faceIcon}>🤳</div>
@@ -169,14 +238,28 @@ function FaceCapture({ onCapture, captured }) {
         </div>
       ) : (
         <div className={styles.cameraActive}>
-          <video ref={videoRef} className={styles.cameraVideo} autoPlay playsInline muted />
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <video
+            ref={videoRef}
+            className={styles.cameraVideo}
+            autoPlay
+            playsInline
+            muted
+          />
           <div className={styles.cameraOverlay}>
             <div className={styles.faceGuide}></div>
           </div>
           <div className={styles.cameraActions}>
-            <button type="button" className={styles.btnCapture} onClick={takePhoto}>📸 Ambil Foto</button>
-            <button type="button" className={styles.btnCancelCamera} onClick={stopCamera}>✕ Batal</button>
+            <button
+              type="button"
+              className={styles.btnCapture}
+              onClick={takePhoto}
+              disabled={!videoReady}
+            >
+              {videoReady ? '📸 Ambil Foto' : '⏳ Memuat...'}
+            </button>
+            <button type="button" className={styles.btnCancelCamera} onClick={stopCamera}>
+              ✕ Batal
+            </button>
           </div>
         </div>
       )}
@@ -188,12 +271,16 @@ function FaceCapture({ onCapture, captured }) {
 function RegisterForm({ onSwitch }) {
   const { register, loading, error, setError } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Baca default role dari state navigasi (e.g. dari tombol "+ Jual Barang")
+  const defaultRole = location.state?.role === 'seller' ? 'seller' : 'buyer'
 
   // step: 1 = data diri, 2 = upload KTP, 3 = selfie / face verify
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
     name: '', email: '', password: '', confirmPassword: '',
-    role: 'buyer', city: '', phone: '',
+    role: defaultRole, city: '', phone: '',
   })
   const [localError, setLocalError] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -204,6 +291,12 @@ function RegisterForm({ onSwitch }) {
 
   // Selfie
   const [selfieData, setSelfieData] = useState(null)
+
+  // Sync role jika navigasi berubah (e.g. klik "+ Jual Barang" saat sudah di halaman register)
+  useEffect(() => {
+    const newRole = location.state?.role === 'seller' ? 'seller' : 'buyer'
+    setForm(prev => ({ ...prev, role: newRole }))
+  }, [location.state?.role])
 
   const handleChange = (e) => {
     setError(''); setLocalError('')
@@ -301,7 +394,7 @@ function RegisterForm({ onSwitch }) {
               placeholder="Jakarta, Bandung..." />
           </div>
           <div className={styles.field}>
-            <label>📱 No. WhatsApp</label>
+            <label>📱 WhatsApp</label>
             <input type="tel" name="phone" value={form.phone} onChange={handleChange}
               placeholder="08xxxxxxxxxx" maxLength={15} required />
           </div>
@@ -415,11 +508,158 @@ function RegisterForm({ onSwitch }) {
   )
 }
 
+// ─── Re-Verify Form (for rejected users) ─────────────────────────────────────
+function ReVerifyForm() {
+  const { user, register, updateProfile, loading, error, setError } = useAuth()
+  const navigate = useNavigate()
+  const [step, setStep] = useState(1) // 1=KTP, 2=selfie
+  const [ktpPreview, setKtpPreview] = useState(null)
+  const [selfieData, setSelfieData] = useState(null)
+  const [localError, setLocalError] = useState('')
+  const [done, setDone] = useState(false)
+
+  const handleKtpChange = (e) => {
+    const f = e.target.files[0]
+    if (!f) return
+    const reader = new FileReader()
+    reader.onload = ev => setKtpPreview(ev.target.result)
+    reader.readAsDataURL(f)
+  }
+
+  const handleSubmit = () => {
+    if (!ktpPreview || !selfieData) { setLocalError('Upload KTP dan selfie terlebih dahulu'); return }
+    // Update user's verification data in localStorage
+    const users = JSON.parse(localStorage.getItem('cr_users') || '[]')
+    const idx = users.findIndex(u => u.id === user.id)
+    if (idx !== -1) {
+      users[idx] = {
+        ...users[idx],
+        ktpPhoto: ktpPreview,
+        selfiePhoto: selfieData,
+        verificationStatus: 'pending',
+        verified: false,
+        rejectionNote: null,
+        verificationDate: null,
+      }
+      localStorage.setItem('cr_users', JSON.stringify(users))
+    }
+    updateProfile({
+      ktpPhoto: ktpPreview,
+      selfiePhoto: selfieData,
+      verificationStatus: 'pending',
+      verified: false,
+      rejectionNote: null,
+    })
+    setDone(true)
+  }
+
+  if (done) return (
+    <div className={styles.formCard}>
+      <div className={styles.formHeader}>
+        <div className={styles.formIcon}>✅</div>
+        <h2>Dokumen Dikirim!</h2>
+        <p>Admin akan memverifikasi ulang identitasmu dalam 1×24 jam.</p>
+      </div>
+      <div className={styles.infoBox}>
+        🔒 Status akun kamu: <strong>Menunggu Verifikasi</strong><br/>
+        Kamu akan mendapat notifikasi setelah admin memproses dokumenmu.
+      </div>
+      <button className={styles.submitBtn} onClick={() => navigate('/')}>
+        Kembali ke Beranda
+      </button>
+    </div>
+  )
+
+  const StepBar = () => (
+    <div className={styles.stepBar}>
+      {['Foto KTP', 'Selfie'].map((label, i) => (
+        <div key={i} className={`${styles.stepItem} ${step > i + 1 ? styles.stepDone : ''} ${step === i + 1 ? styles.stepActive : ''}`}>
+          <div className={styles.stepCircle}>{step > i + 1 ? '✓' : i + 1}</div>
+          <span className={styles.stepLabel}>{label}</span>
+          {i < 1 && <div className={`${styles.stepLine} ${step > i + 1 ? styles.stepLineDone : ''}`} />}
+        </div>
+      ))}
+    </div>
+  )
+
+  return (
+    <div className={styles.formCard}>
+      <div className={styles.formHeader}>
+        <div className={styles.formIcon}>🔄</div>
+        <h2>Verifikasi Ulang</h2>
+        <p>Upload foto identitas dan selfie yang lebih jelas</p>
+      </div>
+
+      {user?.rejectionNote && (
+        <div className={styles.rejectionAlert}>
+          <strong>⚠️ Alasan penolakan sebelumnya:</strong><br/>
+          {user.rejectionNote}
+        </div>
+      )}
+
+      <StepBar />
+
+      {step === 1 && (
+        <>
+          <div className={styles.ktmUploadArea} onClick={() => document.getElementById('reverify-ktp').click()}>
+            {ktpPreview ? (
+              <img src={ktpPreview} alt="KTP" className={styles.ktmPreviewImg} />
+            ) : (
+              <>
+                <div className={styles.ktmUploadIcon}>🪪</div>
+                <p>Klik untuk upload foto KTP / SIM / Paspor</p>
+                <span>JPG / PNG · Maks 5MB · Pastikan terbaca jelas</span>
+              </>
+            )}
+          </div>
+          <input id="reverify-ktp" type="file" accept="image/*" onChange={handleKtpChange} style={{ display: 'none' }} />
+          <div className={styles.ktmTips}>
+            ✅ Foto jelas &amp; tidak buram &nbsp;·&nbsp; ✅ Pencahayaan cukup &nbsp;·&nbsp; ✅ Tidak terpotong
+          </div>
+          {localError && <div className={styles.errorMsg}>⚠️ {localError}</div>}
+          <button className={styles.submitBtn} disabled={!ktpPreview} onClick={() => { setLocalError(''); setStep(2) }}>
+            → Lanjut Foto Selfie
+          </button>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <div className={styles.faceInstructions}>
+            <div className={styles.faceInstructionItem}>💡 Wajah terlihat jelas</div>
+            <div className={styles.faceInstructionItem}>☀️ Pencahayaan cukup</div>
+            <div className={styles.faceInstructionItem}>😐 Tatap kamera langsung</div>
+          </div>
+          <FaceCapture onCapture={setSelfieData} captured={selfieData} />
+          {localError && <div className={styles.errorMsg}>⚠️ {localError}</div>}
+          <div className={styles.ktmActions} style={{ marginTop: 16 }}>
+            <button className={styles.submitBtnOutline} onClick={() => setStep(1)}>← Kembali</button>
+            <button className={styles.submitBtn} disabled={!selfieData || loading} onClick={handleSubmit}>
+              {loading ? '⏳ Mengirim...' : '✅ Kirim Ulang'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AuthPage() {
   const location = useLocation()
+  const { user } = useAuth()
   const initialMode = location.state?.mode || 'login'
   const [mode, setMode] = useState(initialMode)
+
+  // Sync mode when navigating to /auth with different state
+  // e.g. clicking "Masuk" then "Daftar" on Navbar
+  useEffect(() => {
+    const newMode = location.state?.mode || 'login'
+    setMode(newMode)
+  }, [location.state?.mode])
+
+  // If logged-in user with rejected status comes here via re-verify
+  const isReverify = mode === 'reverify' && user?.verificationStatus === 'rejected'
 
   return (
     <div className={styles.page}>
@@ -449,7 +689,12 @@ export default function AuthPage() {
           </div>
         </div>
         <div className={styles.formWrapper}>
-          {mode === 'login' ? <LoginForm onSwitch={setMode} /> : <RegisterForm onSwitch={setMode} />}
+          {isReverify
+            ? <ReVerifyForm />
+            : mode === 'login'
+              ? <LoginForm onSwitch={setMode} />
+              : <RegisterForm onSwitch={setMode} />
+          }
         </div>
       </div>
     </div>
