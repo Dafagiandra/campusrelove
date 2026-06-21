@@ -1,10 +1,16 @@
 export const categories = [
-  { id: 'all',        label: 'Semua',      icon: '🛍️', color: '#7C3AED' },
-  { id: 'fashion',    label: 'Fashion',    icon: '👕', color: '#EC4899' },
-  { id: 'electronic', label: 'Electronic', icon: '💻', color: '#10B981' },
-  { id: 'furniture',  label: 'Furniture',  icon: '🪑', color: '#2563EB' },
-  { id: 'hobi',       label: 'Hobi',       icon: '🎮', color: '#F59E0B' },
-  { id: 'otomotif',   label: 'Otomotif',   icon: '🏍️', color: '#EF4444' },
+  { id: 'all',        label: 'Semua',                   icon: '🛍️', color: '#7C3AED' },
+  { id: 'fashion',    label: 'Fashion',                 icon: '👕', color: '#EC4899' },
+  { id: 'electronic', label: 'Electronic',              icon: '💻', color: '#10B981' },
+  { id: 'furniture',  label: 'Furniture',               icon: '🪑', color: '#2563EB' },
+  { id: 'hobi',       label: 'Hobi',                    icon: '🎮', color: '#F59E0B' },
+  { id: 'otomotif',   label: 'Otomotif',                icon: '🏍️', color: '#EF4444' },
+  { id: 'buku',       label: 'Buku & Alat Tulis',       icon: '📚', color: '#8B5CF6' },
+  { id: 'olahraga',   label: 'Olahraga',                icon: '⚽', color: '#059669' },
+  { id: 'kesehatan',  label: 'Kesehatan & Kecantikan',  icon: '🏥', color: '#F472B6' },
+  { id: 'dapur',      label: 'Dapur & Perabot Rumah',   icon: '🍳', color: '#D97706' },
+  { id: 'bayi',       label: 'Perlengkapan Bayi',       icon: '👶', color: '#60A5FA' },
+  { id: 'lainnya',    label: 'Lainnya',                 icon: '📦', color: '#6B7280' },
 ]
 
 export const sellers = [
@@ -250,12 +256,12 @@ export const products = [
 ]
 
 export const meetupPoints = [
-  { id: 'm1', name: 'Mall Terdekat',        icon: '🏬', description: 'Area food court atau lobby mall, ramai dan aman', hours: '10:00 - 22:00' },
-  { id: 'm2', name: 'Indomaret/Alfamart',   icon: '🏪', description: 'Minimarket 24 jam, mudah ditemukan', hours: '24 jam' },
-  { id: 'm3', name: 'Stasiun Kereta',       icon: '🚉', description: 'Lobby stasiun, ada petugas keamanan', hours: '05:00 - 23:00' },
-  { id: 'm4', name: 'Masjid/Gereja',        icon: '🕌', description: 'Tempat ibadah, area terbuka dan aman', hours: '05:00 - 21:00' },
-  { id: 'm5', name: 'Kantor Pos',           icon: '📮', description: 'Kantor pos terdekat, ada CCTV', hours: '08:00 - 16:00' },
-  { id: 'm6', name: 'Taman Kota',           icon: '🌳', description: 'Taman umum yang ramai dikunjungi', hours: '06:00 - 18:00' },
-  { id: 'm7', name: 'Cafe/Resto',           icon: '☕', description: 'Cafe atau restoran, nyaman dan aman', hours: '08:00 - 22:00' },
-  { id: 'm8', name: 'Pom Bensin',           icon: '⛽', description: 'SPBU 24 jam, terang dan ramai', hours: '24 jam' },
+  { id: 'm1', name: 'Mall Terdekat',        icon: '🏬', description: 'Area food court atau lobby mall, ramai dan aman', hours: '10:00 - 22:00', lat: -6.2146, lng: 106.8451 },
+  { id: 'm2', name: 'Indomaret/Alfamart',   icon: '🏪', description: 'Minimarket 24 jam, mudah ditemukan', hours: '24 jam',          lat: -6.2088, lng: 106.8456 },
+  { id: 'm3', name: 'Stasiun Kereta',       icon: '🚉', description: 'Lobby stasiun, ada petugas keamanan', hours: '05:00 - 23:00',   lat: -6.1944, lng: 106.8229 },
+  { id: 'm4', name: 'Masjid/Gereja',        icon: '🕌', description: 'Tempat ibadah, area terbuka dan aman', hours: '05:00 - 21:00',  lat: -6.1702, lng: 106.8311 },
+  { id: 'm5', name: 'Kantor Pos',           icon: '📮', description: 'Kantor pos terdekat, ada CCTV', hours: '08:00 - 16:00',        lat: -6.1865, lng: 106.8442 },
+  { id: 'm6', name: 'Taman Kota',           icon: '🌳', description: 'Taman umum yang ramai dikunjungi', hours: '06:00 - 18:00',     lat: -6.2115, lng: 106.8526 },
+  { id: 'm7', name: 'Cafe/Resto',           icon: '☕', description: 'Cafe atau restoran, nyaman dan aman', hours: '08:00 - 22:00',   lat: -6.2001, lng: 106.8230 },
+  { id: 'm8', name: 'Pom Bensin',           icon: '⛽', description: 'SPBU 24 jam, terang dan ramai', hours: '24 jam',               lat: -6.2195, lng: 106.8350 },
 ]

@@ -1,0 +1,212 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 50%, #f0fdf4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+/* ── Icon ───────────────────────────────────────────────────────────────────── */
+.iconWrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 28px;
+}
+
+.icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.1); }
+}
+
+.iconRing {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid #ede9fe;
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.15); }
+}
+
+/* ── Text ───────────────────────────────────────────────────────────────────── */
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.desc {
+  font-size: 0.88rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+/* ── Steps ──────────────────────────────────────────────────────────────────── */
+.steps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.stepDot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #9ca3af;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.stepDone .stepDot {
+  background: #10B981;
+  color: white;
+}
+
+.stepActive .stepDot {
+  background: linear-gradient(135deg, #7C3AED, #2563EB);
+  color: white;
+  box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+  animation: stepPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes stepPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(124,58,237,0.4); }
+  50%       { box-shadow: 0 4px 20px rgba(124,58,237,0.7); }
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+}
+
+.stepText strong {
+  font-size: 0.9rem;
+  color: #1a1a2e;
+}
+
+.stepText span {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.stepDone .stepText strong { color: #10B981; }
+.stepActive .stepText strong { color: #7C3AED; }
+
+.stepLine {
+  width: 2px;
+  height: 28px;
+  background: #e5e7eb;
+  margin-left: 17px;
+}
+
+/* ── Info box ───────────────────────────────────────────────────────────────── */
+.infoBox {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 28px;
+  font-size: 0.85rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.infoBox span { font-size: 1.2rem; flex-shrink: 0; }
+
+/* ── Actions ────────────────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btnRefresh {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #7C3AED, #2563EB);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+}
+.btnRefresh:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+
+.btnLogout {
+  padding: 12px 24px;
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+}
+.btnLogout:hover { border-color: #ef4444; color: #ef4444; }
+
+/* ── Note ───────────────────────────────────────────────────────────────────── */
+.note {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.note a { color: #7C3AED; text-decoration: none; }
+.note a:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+  .card { padding: 32px 20px; }
+  .title { font-size: 1.3rem; }
+}

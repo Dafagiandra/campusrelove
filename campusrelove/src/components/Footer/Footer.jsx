@@ -28,6 +28,10 @@ export default function Footer() {
             <Link to="/browse?cat=electronic">💻 Electronic</Link>
             <Link to="/browse?cat=furniture">🪑 Furniture</Link>
             <Link to="/browse?cat=hobi">🎮 Hobi</Link>
+            <Link to="/browse?cat=otomotif">🏍️ Otomotif</Link>
+            <Link to="/browse?cat=buku">📚 Buku</Link>
+            <Link to="/browse?cat=olahraga">⚽ Olahraga</Link>
+            <Link to="/browse?cat=lainnya">📦 Lainnya</Link>
           </div>
 
           <div className={styles.links}>

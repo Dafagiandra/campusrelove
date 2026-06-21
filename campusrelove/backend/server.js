@@ -29,6 +29,32 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+// ── Dev utility: reset admin password ────────────────────────────────────────
+// Akses sekali: GET /api/setup-admin → set admin@preloved.id password = admin123
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/setup-admin', async (req, res) => {
+    try {
+      const bcrypt = require('bcryptjs')
+      const { pool } = require('./database/db')
+      const hash = await bcrypt.hash('admin123', 10)
+
+      // Hapus admin lama kalau ada, buat ulang dengan hash baru
+      await pool.query('DELETE FROM users WHERE email IN (?, ?)',
+        ['admin@preloved.id', 'admin@campusrelove.id'])
+
+      await pool.query(
+        `INSERT INTO users (id, name, email, password, role, verified, verification_status)
+         VALUES ('admin-001', 'Admin Preloved', 'admin@preloved.id', ?, 'admin', 1, 'approved')`,
+        [hash]
+      )
+
+      res.json({ success: true, message: 'Admin reset! Login: admin@preloved.id / admin123' })
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message })
+    }
+  })
+}
+
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.method} ${req.path} tidak ditemukan` })

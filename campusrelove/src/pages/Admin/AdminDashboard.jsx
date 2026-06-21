@@ -1,18 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useProducts } from '../../context/ProductContext'
 import { useOrders } from '../../context/OrderContext'
+import { userAPI } from '../../services/api'
 import styles from './AdminDashboard.module.css'
-
-const getStoredUsers = () => {
-  try { return JSON.parse(localStorage.getItem('cr_users') || '[]') }
-  catch { return [] }
-}
-
-const saveStoredUsers = (users) => {
-  localStorage.setItem('cr_users', JSON.stringify(users))
-}
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -33,56 +25,53 @@ export default function AdminDashboard() {
           PLATFORM_FEE_PERCENT } = useOrders()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
-  const [users, setUsers] = useState(getStoredUsers())
+  const [users, setUsers] = useState([])
+
+  // ── Fetch users from API ───────────────────────────────────────────────────
+  const fetchUsers = useCallback(async () => {
+    try {
+      const data = await userAPI.getAll()
+      if (data.success) setUsers(data.users)
+    } catch { /* ignore if offline */ }
+  }, [])
+
+  useEffect(() => { fetchUsers() }, [fetchUsers])
 
   // ── KTP Verification handlers ──────────────────────────────────────────────
-  const [ktpModal, setKtpModal] = useState(null) // { user, type: 'ktp'|'selfie' }
+  const [ktpModal, setKtpModal] = useState(null)
   const [rejectNote, setRejectNote] = useState('')
 
-  const pendingVerif = users.filter(u => u.verificationStatus === 'pending' && (u.ktpPhoto || u.selfiePhoto))
-  const approvedVerif = users.filter(u => u.verificationStatus === 'approved')
-  const rejectedVerif = users.filter(u => u.verificationStatus === 'rejected')
+  // Map snake_case API response → camelCase for display
+  const mapUser = (u) => ({
+    ...u,
+    verificationStatus: u.verification_status ?? u.verificationStatus ?? 'pending',
+    ktpPhoto:      u.ktp_photo    ? String(u.ktp_photo)    : null,
+    selfiePhoto:   u.selfie_photo ? String(u.selfie_photo) : null,
+    rejectionNote: u.rejection_note ?? u.rejectionNote ?? null,
+    joinDate:      u.join_date    ?? u.joinDate    ?? '',
+    totalSales:    u.total_sales  ?? u.totalSales  ?? 0,
+  })
 
-  const handleApproveKtp = (userId) => {
-    const updated = getStoredUsers().map(u =>
-      u.id === userId ? { ...u, verified: true, verificationStatus: 'approved', verificationDate: new Date().toISOString() } : u
-    )
-    saveStoredUsers(updated)
-    setUsers(updated)
-    // Push notification to user
-    const notifs = JSON.parse(localStorage.getItem('cr_notifications') || '[]')
-    notifs.unshift({
-      notifId: `n${Date.now()}`,
-      recipientId: userId,
-      type: 'verif',
-      message: '✅ Identitas kamu sudah diverifikasi oleh Admin! Akun kamu kini aktif penuh.',
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    })
-    localStorage.setItem('cr_notifications', JSON.stringify(notifs))
+  const mappedUsers   = users.map(mapUser)
+  const pendingVerif  = mappedUsers.filter(u =>
+    (u.verificationStatus === 'pending') && (u.ktpPhoto || u.selfiePhoto)
+  )
+  const approvedVerif = mappedUsers.filter(u => u.verificationStatus === 'approved')
+  const rejectedVerif = mappedUsers.filter(u => u.verificationStatus === 'rejected')
+
+  const handleApproveKtp = async (userId) => {
+    try {
+      await userAPI.approve(userId)
+      await fetchUsers()
+    } catch (err) { console.error(err) }
   }
 
-  const handleRejectKtp = (userId, note) => {
-    const rejectionNote = note || 'Identitas tidak valid'
-    const updated = getStoredUsers().map(u =>
-      u.id === userId
-        ? { ...u, verified: false, verificationStatus: 'rejected', rejectionNote, verificationDate: new Date().toISOString() }
-        : u
-    )
-    saveStoredUsers(updated)
-    setUsers(updated)
-    setRejectNote('')
-    // Push notification to user with rejection reason
-    const notifs = JSON.parse(localStorage.getItem('cr_notifications') || '[]')
-    notifs.unshift({
-      notifId: `n${Date.now()}`,
-      recipientId: userId,
-      type: 'verif',
-      message: `❌ Verifikasi identitas kamu ditolak. Alasan: ${rejectionNote}. Silakan upload ulang dokumen kamu.`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    })
-    localStorage.setItem('cr_notifications', JSON.stringify(notifs))
+  const handleRejectKtp = async (userId, note) => {
+    try {
+      await userAPI.reject(userId, note || 'Identitas tidak valid')
+      await fetchUsers()
+      setRejectNote('')
+    } catch (err) { console.error(err) }
   }
 
   const handleLogout = () => {
@@ -90,8 +79,8 @@ export default function AdminDashboard() {
     navigate('/auth')   // ← redirect ke /auth setelah logout admin
   }
 
-  const buyers   = users.filter((u) => u.role === 'buyer')
-  const sellers  = users.filter((u) => u.role === 'seller')
+  const buyers   = mappedUsers.filter((u) => u.role === 'buyer')
+  const sellers  = mappedUsers.filter((u) => u.role === 'seller')
   const allOrders = getAllOrders()
   const pendingOrders   = allOrders.filter(o => o.status === 'pending_payment')
   const deliveredOrders = allOrders.filter(o => o.status === 'delivered')
@@ -165,7 +154,7 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div>
             <div className={styles.statsGrid}>
-              <StatCard icon="👥" label="Total Pengguna"    value={users.length}          color="#7C3AED" />
+              <StatCard icon="👥" label="Total Pengguna"    value={mappedUsers.length}          color="#7C3AED" />
               <StatCard icon="🛍️" label="Pembeli"           value={buyers.length}         color="#2563EB" />
               <StatCard icon="📦" label="Penjual"           value={sellers.length}        color="#10B981" />
               <StatCard icon="🪪" label="Pending Verifikasi" value={pendingVerif.length}  color="#F59E0B" />
@@ -210,11 +199,11 @@ export default function AdminDashboard() {
 
             <div className={styles.recentSection}>
               <h3 className={styles.sectionTitle}>👤 Pengguna Terbaru</h3>
-              {users.length === 0 ? (
+              {mappedUsers.length === 0 ? (
                 <div className={styles.emptyState}><span>😴</span><p>Belum ada pengguna yang mendaftar</p></div>
               ) : (
                 <div className={styles.userList}>
-                  {users.slice(-5).reverse().map((u) => (
+                  {mappedUsers.slice(-5).reverse().map((u) => (
                     <div key={u.id} className={styles.userRow}>
                       <img src={u.avatar} alt={u.name} className={styles.userAvatar} />
                       <div className={styles.userInfo}>
@@ -236,6 +225,19 @@ export default function AdminDashboard() {
         {/* Verifikasi KTP Tab */}
         {activeTab === 'verifikasi' && (
           <div>
+            {/* Header + refresh */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
+                🪪 Verifikasi Identitas Pengguna
+              </h2>
+              <button
+                onClick={fetchUsers}
+                style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#7C3AED,#2563EB)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Poppins,sans-serif' }}
+              >
+                🔄 Refresh
+              </button>
+            </div>
+
             {/* Stats row */}
             <div className={styles.verifStats}>
               <div className={styles.verifStat} style={{ '--c': '#F59E0B' }}>
@@ -575,9 +577,9 @@ export default function AdminDashboard() {
         {activeTab === 'users' && (
           <div>
             <div className={styles.tableHeader}>
-              <h3 className={styles.sectionTitle}>👥 Semua Pengguna ({users.length})</h3>
+              <h3 className={styles.sectionTitle}>👥 Semua Pengguna ({mappedUsers.length})</h3>
             </div>
-            {users.length === 0 ? (
+            {mappedUsers.length === 0 ? (
               <div className={styles.emptyState}>
                 <span>😴</span>
                 <p>Belum ada pengguna yang mendaftar</p>
@@ -593,7 +595,7 @@ export default function AdminDashboard() {
                   <span>Bergabung</span>
                   <span>Status</span>
                 </div>
-                {users.map((u) => (
+                {mappedUsers.map((u) => (
                   <div key={u.id} className={styles.tableRow}>
                     <div className={styles.tableUser}>
                       <img src={u.avatar} alt={u.name} className={styles.tableAvatar} />
@@ -665,7 +667,7 @@ export default function AdminDashboard() {
               <h3>📊 Ringkasan Platform</h3>
               <div className={styles.reportItem}>
                 <span>Total Pengguna Terdaftar</span>
-                <strong>{users.length}</strong>
+                <strong>{mappedUsers.length}</strong>
               </div>
               <div className={styles.reportItem}>
                 <span>Pembeli Aktif</span>
@@ -691,7 +693,7 @@ export default function AdminDashboard() {
 
             <div className={styles.reportCard}>
               <h3>📦 Distribusi Kategori</h3>
-              {['furniture', 'electronic', 'academic'].map((cat) => {
+              {['fashion','electronic','furniture','hobi','otomotif','buku','olahraga','kesehatan','dapur','bayi','lainnya'].map((cat) => {
                 const count = allProducts.filter(p => p.category === cat).length
                 const pct = allProducts.length > 0 ? Math.round((count / allProducts.length) * 100) : 0
                 return (

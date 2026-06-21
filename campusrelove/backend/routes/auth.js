@@ -40,7 +40,9 @@ router.post('/register', async (req, res) => {
     )
 
     const [user] = await pool.query(
-      'SELECT id, name, email, role, city, phone, avatar, balance, verified, verification_status, join_date FROM users WHERE id = LAST_INSERT_ID()',
+      `SELECT id, name, email, role, city, phone, avatar, balance, verified,
+              verification_status, join_date
+       FROM users WHERE id = LAST_INSERT_ID()`,
     )
 
     const token = jwt.sign(
@@ -94,7 +96,9 @@ router.post('/login', async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, role, city, phone, avatar, balance, rating, total_sales, verified, verification_status, rejection_note, join_date FROM users WHERE id = ?',
+      `SELECT id, name, email, role, city, phone, avatar, balance, rating,
+              total_sales, verified, verification_status, rejection_note, join_date
+       FROM users WHERE id = ?`,
       [req.user.id]
     )
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User tidak ditemukan' })

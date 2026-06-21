@@ -4,28 +4,22 @@ import { useAuth } from './AuthContext'
 
 const OrderContext = createContext(null)
 
-// ── localStorage keys (chat still uses localStorage) ─────────────────────────
 const CHATS_KEY        = 'cr_chats'
 const ADMIN_WALLET_KEY = 'cr_admin_wallet'
-
-// ── Platform fee constant ─────────────────────────────────────────────────────
 const PLATFORM_FEE_PERCENT = 2
 
-// ── helpers ───────────────────────────────────────────────────────────────────
 const loadLS  = (key, fallback = []) => {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) }
   catch { return fallback }
 }
 const saveLS = (key, data) => localStorage.setItem(key, JSON.stringify(data))
 
-/** Calculate fund split (kept for UI display) */
 const calcFundSplit = (price) => {
   const platformFee  = Math.round(price * PLATFORM_FEE_PERCENT / 100)
   const sellerAmount = price - platformFee
   return { platformFee, sellerAmount }
 }
 
-/** Map snake_case order row → camelCase */
 const mapOrder = (o) => ({
   orderId:            o.id            ?? o.orderId,
   buyerId:            o.buyer_id      ?? o.buyerId,
@@ -40,6 +34,7 @@ const mapOrder = (o) => ({
   escrowStatus:       o.escrow_status ?? o.escrowStatus ?? 'holding',
   status:             o.status,
   meetupPoint:        o.meetup_point  ?? o.meetupPoint  ?? null,
+  paymentMethod:      o.payment_method ?? o.paymentMethod ?? 'transfer_escrow',
   resi:               o.resi          ?? null,
   codSchedule:        o.cod_schedule  ?? o.codSchedule  ?? null,
   cancelReason:       o.cancel_reason ?? o.cancelReason ?? null,
@@ -53,7 +48,6 @@ const mapOrder = (o) => ({
   cancelledAt:        o.cancelled_at  ?? o.cancelledAt  ?? null,
 })
 
-/** Map snake_case notification row → camelCase */
 const mapNotif = (n) => ({
   notifId:     n.id           ?? n.notifId,
   recipientId: n.recipient_id ?? n.recipientId,
@@ -64,29 +58,20 @@ const mapNotif = (n) => ({
   createdAt:   n.created_at   ?? n.createdAt,
 })
 
-// ── provider ──────────────────────────────────────────────────────────────────
 export function OrderProvider({ children }) {
   const { user } = useAuth()
 
   const [orders,        setOrders]        = useState([])
   const [notifications, setNotifications] = useState([])
   const [chats,         setChats]         = useState(() => loadLS(CHATS_KEY))
-
   const loadedRef = useRef(false)
-
-  // ── Fetch helpers ────────────────────────────────────────────────────────
 
   const fetchOrders = useCallback(async () => {
     if (!user) return
     try {
-      let data
-      if (user.role === 'admin') {
-        data = await orderAPI.getAll()
-      } else {
-        data = await orderAPI.getMy()
-      }
+      const data = user.role === 'admin' ? await orderAPI.getAll() : await orderAPI.getMy()
       if (data.success) setOrders(data.orders.map(mapOrder))
-    } catch { /* silently ignore if backend offline */ }
+    } catch { /* offline mode */ }
   }, [user])
 
   const fetchNotifications = useCallback(async () => {
@@ -94,10 +79,9 @@ export function OrderProvider({ children }) {
     try {
       const data = await userAPI.getNotifications()
       if (data.success) setNotifications(data.notifications.map(mapNotif))
-    } catch { /* silently ignore */ }
+    } catch { /* offline */ }
   }, [user])
 
-  // Load on user change
   useEffect(() => {
     if (user) {
       fetchOrders()
@@ -110,33 +94,64 @@ export function OrderProvider({ children }) {
     }
   }, [user, fetchOrders, fetchNotifications])
 
-  // ── Chat helpers (still localStorage) ───────────────────────────────────
   const persistChats = (list) => { setChats(list); saveLS(CHATS_KEY, list) }
 
   const addSystemChatMsg = (conversationId, text) => {
     const current = loadLS(CHATS_KEY)
     const idx = current.findIndex(c => c.conversationId === conversationId)
     if (idx === -1) return
-    const msg = {
+    current[idx].messages.push({
       messageId: `m${Date.now()}`,
       senderId:  'system',
       text,
       sentAt:    new Date().toISOString(),
       isRead:    true,
-    }
-    current[idx].messages.push(msg)
+    })
     persistChats(current)
   }
 
-  // ── ORDER ACTIONS ────────────────────────────────────────────────────────
+  // ── ORDER ACTIONS ──────────────────────────────────────────────────────────
 
-  const createOrder = async ({ buyerId, buyerName, sellerId, productId, productTitle, price, meetupPoint }) => {
+  const createOrder = async ({ buyerId, buyerName, sellerId, productId, productTitle, price, meetupPoint, paymentMethod }) => {
     try {
-      const data = await orderAPI.create({ productId, meetupPoint: meetupPoint || null })
+      const data = await orderAPI.create({
+        productId,
+        meetupPoint: meetupPoint || null,
+        paymentMethod: paymentMethod || 'transfer_escrow',
+      })
       if (data.success) {
-        const mapped = mapOrder(data.order)
-        setOrders((prev) => [mapped, ...prev])
+        const mapped = { ...mapOrder(data.order), paymentMethod: paymentMethod || 'transfer_escrow' }
+        setOrders(prev => [mapped, ...prev])
         await fetchNotifications()
+
+        // ── Auto-create conversation between buyer and seller ──────────────
+        const current = loadLS(CHATS_KEY)
+        const existing = current.find(c =>
+          c.buyerId === buyerId && c.sellerId === sellerId && c.productId === productId
+        )
+        if (!existing) {
+          // Get names for both parties from stored users
+          const storedUsers = (() => { try { return JSON.parse(localStorage.getItem('cr_users') || '[]') } catch { return [] } })()
+          const buyerUser  = storedUsers.find(u => u.id === buyerId)
+          const sellerUser = storedUsers.find(u => u.id === sellerId)
+
+          const conv = {
+            conversationId: `conv_${Date.now()}`,
+            buyerId, sellerId, productId, productTitle,
+            buyerName:  buyerUser?.name  || buyerName || 'Pembeli',
+            sellerName: sellerUser?.name || 'Penjual',
+            messages: [{
+              messageId: `m${Date.now()}`,
+              senderId:  'system',
+              text:      `🛍️ Pesanan dibuat untuk "${productTitle}" — Rp ${price.toLocaleString('id-ID')}. Gunakan chat ini untuk koordinasi titik temu dan konfirmasi.`,
+              sentAt:    new Date().toISOString(),
+              isRead:    false,
+            }],
+            createdAt: new Date().toISOString(),
+          }
+          persistChats([conv, ...current])
+        }
+
         return mapped
       }
       throw new Error(data.message || 'Gagal membuat pesanan')
@@ -144,19 +159,13 @@ export function OrderProvider({ children }) {
   }
 
   const confirmPayment = async (orderId) => {
-    try {
-      await orderAPI.confirmPayment(orderId)
-      await fetchOrders()
-      await fetchNotifications()
-    } catch (err) { throw err }
+    try { await orderAPI.confirmPayment(orderId); await fetchOrders(); await fetchNotifications() }
+    catch (err) { throw err }
   }
 
   const rejectPayment = async (orderId, reason = 'Pembayaran tidak valid') => {
-    try {
-      await orderAPI.cancel(orderId, reason)
-      await fetchOrders()
-      await fetchNotifications()
-    } catch (err) { throw err }
+    try { await orderAPI.cancel(orderId, reason); await fetchOrders(); await fetchNotifications() }
+    catch (err) { throw err }
   }
 
   const processOrder = async (orderId) => {
@@ -173,11 +182,8 @@ export function OrderProvider({ children }) {
   }
 
   const rejectOrder = async (orderId, reason = 'Stok habis') => {
-    try {
-      await orderAPI.cancel(orderId, reason)
-      await fetchOrders()
-      await fetchNotifications()
-    } catch (err) { throw err }
+    try { await orderAPI.cancel(orderId, reason); await fetchOrders(); await fetchNotifications() }
+    catch (err) { throw err }
   }
 
   const shipOrder = async (orderId, { method, resi, codSchedule } = {}) => {
@@ -209,6 +215,23 @@ export function OrderProvider({ children }) {
 
   const releaseFund = (orderId) => confirmDelivery(orderId)
 
+  const confirmCOD = async (orderId) => {
+    try {
+      await orderAPI.confirmDelivery(orderId)
+      await fetchOrders()
+      await fetchNotifications()
+      const o = orders.find(x => x.orderId === orderId)
+      if (o) {
+        const conv = loadLS(CHATS_KEY).find(c => c.productId === o.productId && c.buyerId === o.buyerId)
+        if (conv) addSystemChatMsg(conv.conversationId, `🎉 COD selesai! Transaksi berhasil. Komisi platform 2% tercatat.`)
+      }
+    } catch (err) { throw err }
+  }
+
+  const updateOrderMeetup = (orderId, meetupPoint) => {
+    setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, meetupPoint } : o))
+  }
+
   const cancelOrder = async (orderId, reason, cancelledBy = 'buyer') => {
     try {
       await orderAPI.cancel(orderId, reason)
@@ -224,43 +247,44 @@ export function OrderProvider({ children }) {
     } catch { return false }
   }
 
-  // ── NOTIFICATION ACTIONS ─────────────────────────────────────────────────
+  // ── NOTIFICATIONS ──────────────────────────────────────────────────────────
 
   const addNotif = async () => { await fetchNotifications() }
 
   const markNotifRead = async (notifId) => {
-    setNotifications((prev) =>
-      prev.map((n) => n.notifId === notifId ? { ...n, isRead: true } : n)
-    )
+    setNotifications(prev => prev.map(n => n.notifId === notifId ? { ...n, isRead: true } : n))
     try { await userAPI.markRead(notifId) } catch { /* ignore */ }
   }
 
   const markAllRead = async (userId) => {
-    setNotifications((prev) =>
-      prev.map((n) => n.recipientId === userId ? { ...n, isRead: true } : n)
-    )
-    const unread = notifications.filter((n) => n.recipientId === userId && !n.isRead)
-    await Promise.allSettled(unread.map((n) => userAPI.markRead(n.notifId)))
+    setNotifications(prev => prev.map(n => n.recipientId === userId ? { ...n, isRead: true } : n))
+    const unread = notifications.filter(n => n.recipientId === userId && !n.isRead)
+    await Promise.allSettled(unread.map(n => userAPI.markRead(n.notifId)))
   }
 
   const getUserNotifs = (userId) =>
-    notifications
-      .filter((n) => n.recipientId === userId)
+    notifications.filter(n => n.recipientId === userId)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   const getUnreadCount = (userId) =>
-    notifications.filter((n) => n.recipientId === userId && !n.isRead).length
+    notifications.filter(n => n.recipientId === userId && !n.isRead).length
 
-  // ── CHAT ACTIONS (localStorage) ──────────────────────────────────────────
+  // ── CHAT (localStorage) ────────────────────────────────────────────────────
+
   const getOrCreateConversation = (buyerId, sellerId, productId, productTitle) => {
     const current = loadLS(CHATS_KEY)
-    const existing = current.find(
-      (c) => c.buyerId === buyerId && c.sellerId === sellerId && c.productId === productId
-    )
+    const existing = current.find(c => c.buyerId === buyerId && c.sellerId === sellerId && c.productId === productId)
     if (existing) return existing
+
+    const storedUsers = (() => { try { return JSON.parse(localStorage.getItem('cr_users') || '[]') } catch { return [] } })()
+    const buyerUser  = storedUsers.find(u => u.id === buyerId)
+    const sellerUser = storedUsers.find(u => u.id === sellerId)
+
     const conv = {
       conversationId: `conv_${Date.now()}`,
       buyerId, sellerId, productId, productTitle,
+      buyerName:  buyerUser?.name  || 'Pembeli',
+      sellerName: sellerUser?.name || 'Penjual',
       messages: [{
         messageId: `m${Date.now()}`,
         senderId:  'system',
@@ -276,13 +300,13 @@ export function OrderProvider({ children }) {
 
   const sendMessage = (conversationId, senderId, text) => {
     const current = loadLS(CHATS_KEY)
-    const idx = current.findIndex((c) => c.conversationId === conversationId)
+    const idx = current.findIndex(c => c.conversationId === conversationId)
     if (idx === -1) return
     const msg = {
-      messageId: `m${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      messageId: `m${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
       senderId, text,
-      sentAt:    new Date().toISOString(),
-      isRead:    false,
+      sentAt: new Date().toISOString(),
+      isRead: false,
     }
     current[idx].messages.push(msg)
     current[idx].lastMessageAt = msg.sentAt
@@ -290,19 +314,19 @@ export function OrderProvider({ children }) {
     return msg
   }
 
-  const getConversation       = (id)       => loadLS(CHATS_KEY).find((c) => c.conversationId === id) || null
+  const getConversation = (id) => loadLS(CHATS_KEY).find(c => c.conversationId === id) || null
   const getSellerConversations = (sellerId) =>
-    loadLS(CHATS_KEY).filter((c) => c.sellerId === sellerId)
+    loadLS(CHATS_KEY).filter(c => c.sellerId === sellerId)
       .sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt))
   const getBuyerConversations = (buyerId) =>
-    loadLS(CHATS_KEY).filter((c) => c.buyerId === buyerId)
+    loadLS(CHATS_KEY).filter(c => c.buyerId === buyerId)
       .sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt))
 
   const markChatRead = (conversationId, userId) => {
     const current = loadLS(CHATS_KEY)
-    const idx = current.findIndex((c) => c.conversationId === conversationId)
+    const idx = current.findIndex(c => c.conversationId === conversationId)
     if (idx === -1) return
-    current[idx].messages = current[idx].messages.map((m) =>
+    current[idx].messages = current[idx].messages.map(m =>
       m.senderId !== userId ? { ...m, isRead: true } : m
     )
     persistChats(current)
@@ -310,29 +334,23 @@ export function OrderProvider({ children }) {
   }
 
   const getUnreadChatCount = (userId) => {
-    const convs = loadLS(CHATS_KEY).filter((c) => c.buyerId === userId || c.sellerId === userId)
-    return convs.reduce((sum, c) => sum + c.messages.filter((m) => m.senderId !== userId && !m.isRead).length, 0)
+    const convs = loadLS(CHATS_KEY).filter(c => c.buyerId === userId || c.sellerId === userId)
+    return convs.reduce((sum, c) =>
+      sum + c.messages.filter(m => m.senderId !== userId && !m.isRead).length, 0)
   }
 
-  // ── ORDER QUERIES ────────────────────────────────────────────────────────
-  const getOrdersByBuyer  = (buyerId)  => orders.filter((o) => o.buyerId  === buyerId)
-  const getOrdersBySeller = (sellerId) => orders.filter((o) => o.sellerId === sellerId)
-  const getAllOrders       = ()         => [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  const getOrderById      = (id)       => orders.find((o) => o.orderId === id) || null
+  // ── QUERIES ────────────────────────────────────────────────────────────────
 
-  const isOverdue = (order) => {
-    if (order.status !== 'paid') return false
-    return (new Date() - new Date(order.paidAt)) > 48 * 60 * 60 * 1000
-  }
+  const getOrdersByBuyer  = (buyerId)  => orders.filter(o => o.buyerId  === buyerId)
+  const getOrdersBySeller = (sellerId) => orders.filter(o => o.sellerId === sellerId)
+  const getAllOrders       = ()         => [...orders].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const getOrderById      = (id)       => orders.find(o => o.orderId === id) || null
+  const isOverdue = (order) => order.status === 'paid' && (new Date() - new Date(order.paidAt)) > 48*60*60*1000
+  const isProductSold = (productId) =>
+    orders.some(o => o.productId === productId && ['paid','processing','shipped','delivered','completed'].includes(o.status))
 
-  const isProductSold = (productId) => {
-    const SOLD_STATUSES = ['paid', 'processing', 'shipped', 'delivered', 'completed']
-    return orders.some((o) => o.productId === productId && SOLD_STATUSES.includes(o.status))
-  }
-
-  // ── ESCROW / DANA QUERIES ────────────────────────────────────────────────
   const getEscrowBalance = () =>
-    orders.filter((o) => ['paid','processing','shipped'].includes(o.status))
+    orders.filter(o => ['paid','processing','shipped'].includes(o.status) && o.paymentMethod !== 'cod')
       .reduce((sum, o) => sum + (o.price || 0), 0)
 
   const getAdminWalletBalance = () => loadLS(ADMIN_WALLET_KEY, { balance: 0 }).balance || 0
@@ -341,17 +359,15 @@ export function OrderProvider({ children }) {
   return (
     <OrderContext.Provider value={{
       orders, notifications, chats,
-      PLATFORM_FEE_PERCENT,
-      calcFundSplit,
+      PLATFORM_FEE_PERCENT, calcFundSplit,
       createOrder, confirmPayment, rejectPayment,
       processOrder, rejectOrder, shipOrder, cancelOrder,
-      confirmDelivery, releaseFund,
+      confirmDelivery, releaseFund, confirmCOD, updateOrderMeetup,
       addNotif, markNotifRead, markAllRead,
       getUserNotifs, getUnreadCount,
       getOrCreateConversation, sendMessage,
       getConversation, getSellerConversations,
-      getBuyerConversations, markChatRead,
-      getUnreadChatCount,
+      getBuyerConversations, markChatRead, getUnreadChatCount,
       getOrdersByBuyer, getOrdersBySeller,
       getAllOrders, getOrderById, isOverdue, isProductSold,
       getEscrowBalance, getAdminWalletBalance, getAdminWalletHistory,

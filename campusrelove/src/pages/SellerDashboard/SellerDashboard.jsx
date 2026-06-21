@@ -319,9 +319,17 @@ function UploadProduct({ sellerId, sellerName }) {
           <label className={styles.fieldLabel}>Kategori <span className={styles.required}>*</span></label>
           <select name="category" value={form.category} onChange={handleChange} required>
             <option value="">Pilih kategori...</option>
-            <option value="furniture">🪑 Furniture</option>
+            <option value="fashion">👕 Fashion</option>
             <option value="electronic">💻 Electronic</option>
-            <option value="academic">📚 Academic Supplies</option>
+            <option value="furniture">🪑 Furniture</option>
+            <option value="hobi">🎮 Hobi</option>
+            <option value="otomotif">🏍️ Otomotif</option>
+            <option value="buku">📚 Buku & Alat Tulis</option>
+            <option value="olahraga">⚽ Olahraga</option>
+            <option value="kesehatan">🏥 Kesehatan & Kecantikan</option>
+            <option value="dapur">🍳 Dapur & Perabot Rumah</option>
+            <option value="bayi">👶 Perlengkapan Bayi</option>
+            <option value="lainnya">📦 Lainnya</option>
           </select>
         </div>
 
@@ -460,6 +468,7 @@ function MyListings({ sellerId }) {
 export default function SellerDashboard() {
   const { user, updateProfile } = useAuth()
   const { getSellerProducts } = useProducts()
+  const { getOrdersBySeller } = useOrders()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('upload')
 
@@ -511,19 +520,10 @@ export default function SellerDashboard() {
     )
   }
 
-  // Baca verified langsung dari localStorage agar tidak reset saat navigasi
-  const isVerified = (() => {
-    if (user.verified) return true
-    try {
-      const users = JSON.parse(localStorage.getItem('cr_users') || '[]')
-      const found = users.find(u => u.id === user.id)
-      return found?.verified || false
-    } catch { return false }
-  })()
+  const isVerified = user.verified || user.verificationStatus === 'approved'
 
   const handleVerified = () => {
-    // Simpan verified ke localStorage dan update session
-    updateProfile({ verified: true })
+    updateProfile({ verified: true, verificationStatus: 'approved' })
   }
 
   const seller = {
@@ -533,23 +533,12 @@ export default function SellerDashboard() {
     reviews: user.reviews || [],
   }
 
-  const myProducts = getSellerProducts(user.id)
-  const totalViews = myProducts.reduce((sum, p) => sum + (p.views || 0), 0)
+  const myProducts      = getSellerProducts(user.id)
+  const totalViews      = myProducts.reduce((sum, p) => sum + (p.views || 0), 0)
+  const sellerBalance   = user.balance    || 0
+  const sellerTotalSales = user.totalSales || 0
 
-  // Baca saldo & totalSales terbaru langsung dari localStorage
-  // (karena confirmDelivery update localStorage, bukan React state)
-  const freshSellerData = (() => {
-    try {
-      const users = JSON.parse(localStorage.getItem('cr_users') || '[]')
-      return users.find(u => u.id === user.id) || {}
-    } catch { return {} }
-  })()
-  const sellerBalance   = freshSellerData.balance    || 0
-  const sellerTotalSales = freshSellerData.totalSales || 0
-
-  // Riwayat pendapatan dari orders yang completed milik seller ini
-  const { getOrdersBySeller } = useOrders()
-  const myOrders       = getOrdersBySeller(user.id)
+  const myOrders        = getOrdersBySeller(user.id)
   const completedOrders = myOrders.filter(o => o.status === 'completed')
   const pendingEarnings = myOrders
     .filter(o => ['paid', 'processing', 'shipped'].includes(o.status))

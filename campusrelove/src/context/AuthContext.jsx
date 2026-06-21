@@ -1,10 +1,17 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { authAPI } from '../services/api'
+import { authAPI, isBackendAvailable } from '../services/api'
 
 const AuthContext = createContext(null)
 
 const TOKEN_KEY   = 'cr_token'
 const SESSION_KEY = 'cr_session'
+
+// ── localStorage fallback (for demo/GitHub Pages without backend) ─────────────
+const getStoredUsers = () => { try { return JSON.parse(localStorage.getItem('cr_users') || '[]') } catch { return [] } }
+const saveUsers = (u) => localStorage.setItem('cr_users', JSON.stringify(u))
+const ADMIN_ACCOUNTS = [
+  { id: 'admin-001', email: 'admin@preloved.id', password: 'admin123', name: 'Admin Preloved', role: 'admin', verified: true, verificationStatus: 'approved', balance: 0 },
+]
 
 const getStoredSession = () => {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') }
@@ -16,8 +23,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
-  // On mount: if token exists, refresh user data from /api/auth/me
+  // On mount: if token exists AND backend available, refresh user data
   useEffect(() => {
+    if (!isBackendAvailable()) return  // GitHub Pages / offline mode
+
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) return
 
@@ -30,7 +39,6 @@ export function AuthProvider({ children }) {
           localStorage.setItem(SESSION_KEY, JSON.stringify(mapped))
         }
       } catch {
-        // Token expired or backend offline — clear stale token
         localStorage.removeItem(TOKEN_KEY)
         localStorage.removeItem(SESSION_KEY)
         setUser(null)
@@ -68,24 +76,46 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true)
     setError('')
+
+    // ── Offline/demo mode (no backend) ────────────────────────────────────────
+    if (!isBackendAvailable()) {
+      // Check admin
+      const admin = ADMIN_ACCOUNTS.find(a => a.email === email && a.password === password)
+      if (admin) {
+        const { password: _, ...safeAdmin } = admin
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safeAdmin))
+        setUser(safeAdmin); setLoading(false)
+        return { success: true, role: 'admin' }
+      }
+      // Check stored users
+      const users = getStoredUsers()
+      const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
+      if (found) {
+        const { password: _, ...safe } = found
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safe))
+        setUser(safe); setLoading(false)
+        return { success: true, role: found.role }
+      }
+      setError('Email atau password salah'); setLoading(false)
+      return { success: false }
+    }
+
+    // ── Online mode ───────────────────────────────────────────────────────────
     try {
       const data = await authAPI.login({ email, password })
       if (data.success) {
         localStorage.setItem(TOKEN_KEY, data.token)
         const mapped = mapUser(data.user)
-        setUser(mapped)
-        setLoading(false)
+        setUser(mapped); setLoading(false)
         return { success: true, role: mapped.role }
       }
-      setError(data.message || 'Login gagal')
-      setLoading(false)
+      setError(data.message || 'Login gagal'); setLoading(false)
       return { success: false }
     } catch (err) {
       const msg = err.message?.includes('fetch')
         ? 'Tidak dapat terhubung ke server. Pastikan backend aktif.'
         : (err.message || 'Login gagal')
-      setError(msg)
-      setLoading(false)
+      setError(msg); setLoading(false)
       return { success: false }
     }
   }
@@ -94,30 +124,51 @@ export function AuthProvider({ children }) {
                              ktpPhoto, selfiePhoto, verificationStatus }) => {
     setLoading(true)
     setError('')
+
+    // ── Offline/demo mode ─────────────────────────────────────────────────────
+    if (!isBackendAvailable()) {
+      const users = getStoredUsers()
+      if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+        setError('Email sudah terdaftar'); setLoading(false)
+        return { success: false, message: 'Email sudah terdaftar' }
+      }
+      const newUser = {
+        id: `u${Date.now()}`, name, email, password, role,
+        city: city || '', phone: phone || '',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+        balance: 0, rating: 0, totalSales: 0, verified: false,
+        verificationStatus: 'pending',
+        ktpPhoto: ktpPhoto || null, selfiePhoto: selfiePhoto || null,
+        joinDate: new Date().toISOString().split('T')[0],
+      }
+      users.push(newUser)
+      saveUsers(users)
+      const { password: _, ...safe } = newUser
+      localStorage.setItem(SESSION_KEY, JSON.stringify(safe))
+      setUser(safe); setLoading(false)
+      return { success: true, role }
+    }
+
+    // ── Online mode ───────────────────────────────────────────────────────────
     try {
       const data = await authAPI.register({
         name, email, password, role,
-        city:        city        || undefined,
-        phone:       phone       || undefined,
-        ktpPhoto:    ktpPhoto    || undefined,
-        selfiePhoto: selfiePhoto || undefined,
+        city: city || undefined, phone: phone || undefined,
+        ktpPhoto: ktpPhoto || undefined, selfiePhoto: selfiePhoto || undefined,
       })
       if (data.success) {
         localStorage.setItem(TOKEN_KEY, data.token)
         const mapped = mapUser(data.user)
-        setUser(mapped)
-        setLoading(false)
+        setUser(mapped); setLoading(false)
         return { success: true, role: mapped.role }
       }
-      setError(data.message || 'Registrasi gagal')
-      setLoading(false)
+      setError(data.message || 'Registrasi gagal'); setLoading(false)
       return { success: false, message: data.message }
     } catch (err) {
       const msg = err.message?.includes('fetch')
         ? 'Tidak dapat terhubung ke server. Pastikan backend aktif.'
         : (err.message || 'Registrasi gagal')
-      setError(msg)
-      setLoading(false)
+      setError(msg); setLoading(false)
       return { success: false, message: msg }
     }
   }
@@ -131,17 +182,28 @@ export function AuthProvider({ children }) {
 
   const updateProfile = async (updates) => {
     if (!user) return
+    // Always update local session first
+    const updatedUser = { ...user, ...updates }
+    setUser(updatedUser)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+
+    if (!isBackendAvailable()) {
+      // Offline: update localStorage users array
+      const users = getStoredUsers()
+      const idx = users.findIndex(u => u.id === user.id)
+      if (idx !== -1) { users[idx] = { ...users[idx], ...updates }; saveUsers(users) }
+      return { success: true }
+    }
+
     try {
       const data = await authAPI.update(updates)
       if (data.success && data.user) {
         const mapped = mapUser(data.user)
         setUser(mapped)
-        return { success: true }
+        localStorage.setItem(SESSION_KEY, JSON.stringify(mapped))
       }
-      return { success: false }
+      return { success: true }
     } catch {
-      // Optimistic update even when offline
-      setUser((prev) => ({ ...prev, ...updates }))
       return { success: false, offline: true }
     }
   }

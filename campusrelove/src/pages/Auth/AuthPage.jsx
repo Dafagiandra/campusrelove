@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { userAPI } from '../../services/api'
 import styles from './AuthPage.module.css'
 
 // ─── Global Verification Banner ──────────────────────────────────────────────
@@ -53,9 +54,9 @@ function LoginForm({ onSwitch }) {
 
   const handleChange = (e) => { setError(''); setForm({ ...form, [e.target.name]: e.target.value }) }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const result = login(form.email, form.password)
+    const result = await login(form.email, form.password)
     if (result.success) {
       if (result.role === 'admin') navigate('/admin')
       else navigate(from)
@@ -329,16 +330,17 @@ function RegisterForm({ onSwitch }) {
   }
 
   // Step 3 → Selesai daftar
-  const doRegister = () => {
+  const doRegister = async () => {
     if (!selfieData) { setLocalError('Foto selfie wajib untuk verifikasi wajah'); return }
-    const result = register({
+    const result = await register({
       name: form.name, email: form.email, password: form.password,
       role: form.role, city: form.city, phone: form.phone,
       ktpPhoto: ktpPreview,
       selfiePhoto: selfieData,
-      verificationStatus: 'pending', // admin yang approve
+      verificationStatus: 'pending',
     })
     if (result.success) {
+      // Redirect ke dashboard — PendingGate akan tampilkan halaman tunggu verifikasi
       if (result.role === 'seller') navigate('/dashboard')
       else navigate('/')
     }
@@ -510,12 +512,13 @@ function RegisterForm({ onSwitch }) {
 
 // ─── Re-Verify Form (for rejected users) ─────────────────────────────────────
 function ReVerifyForm() {
-  const { user, register, updateProfile, loading, error, setError } = useAuth()
+  const { user, updateProfile, loading } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(1) // 1=KTP, 2=selfie
   const [ktpPreview, setKtpPreview] = useState(null)
   const [selfieData, setSelfieData] = useState(null)
   const [localError, setLocalError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
 
   const handleKtpChange = (e) => {
@@ -526,31 +529,26 @@ function ReVerifyForm() {
     reader.readAsDataURL(f)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!ktpPreview || !selfieData) { setLocalError('Upload KTP dan selfie terlebih dahulu'); return }
-    // Update user's verification data in localStorage
-    const users = JSON.parse(localStorage.getItem('cr_users') || '[]')
-    const idx = users.findIndex(u => u.id === user.id)
-    if (idx !== -1) {
-      users[idx] = {
-        ...users[idx],
-        ktpPhoto: ktpPreview,
-        selfiePhoto: selfieData,
+    setSubmitting(true)
+    setLocalError('')
+    try {
+      await userAPI.reverify(user.id, { ktpPhoto: ktpPreview, selfiePhoto: selfieData })
+      // Update session state
+      await updateProfile({
         verificationStatus: 'pending',
         verified: false,
         rejectionNote: null,
-        verificationDate: null,
-      }
-      localStorage.setItem('cr_users', JSON.stringify(users))
+      })
+      setDone(true)
+    } catch (err) {
+      setLocalError(err.message?.includes('fetch')
+        ? 'Tidak dapat terhubung ke server. Pastikan backend aktif.'
+        : (err.message || 'Gagal mengirim dokumen'))
+    } finally {
+      setSubmitting(false)
     }
-    updateProfile({
-      ktpPhoto: ktpPreview,
-      selfiePhoto: selfieData,
-      verificationStatus: 'pending',
-      verified: false,
-      rejectionNote: null,
-    })
-    setDone(true)
   }
 
   if (done) return (
@@ -634,8 +632,8 @@ function ReVerifyForm() {
           {localError && <div className={styles.errorMsg}>⚠️ {localError}</div>}
           <div className={styles.ktmActions} style={{ marginTop: 16 }}>
             <button className={styles.submitBtnOutline} onClick={() => setStep(1)}>← Kembali</button>
-            <button className={styles.submitBtn} disabled={!selfieData || loading} onClick={handleSubmit}>
-              {loading ? '⏳ Mengirim...' : '✅ Kirim Ulang'}
+            <button className={styles.submitBtn} disabled={!selfieData || submitting} onClick={handleSubmit}>
+              {submitting ? '⏳ Mengirim...' : '✅ Kirim Ulang'}
             </button>
           </div>
         </>

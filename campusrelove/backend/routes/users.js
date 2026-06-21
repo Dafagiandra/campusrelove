@@ -8,7 +8,10 @@ const router = express.Router()
 router.get('/', authMiddleware, adminOnly, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, role, city, phone, avatar, balance, verified, verification_status, rejection_note, join_date, created_at FROM users ORDER BY created_at DESC'
+      `SELECT id, name, email, role, city, phone, avatar, balance, verified,
+              verification_status, rejection_note, ktp_photo, selfie_photo,
+              join_date, created_at
+       FROM users ORDER BY created_at DESC`
     )
     res.json({ success: true, users: rows })
   } catch (err) {
@@ -66,7 +69,37 @@ router.put('/:id/reject', authMiddleware, adminOnly, async (req, res) => {
   }
 })
 
-// ── GET /api/users/notifications (current user) ───────────────────────────────
+// ── PUT /api/users/:id/reverify ───────────────────────────────────────────────
+// User submit ulang KTP + selfie setelah ditolak
+router.put('/:id/reverify', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak' })
+    }
+    const { ktpPhoto, selfiePhoto } = req.body
+    if (!ktpPhoto || !selfiePhoto) {
+      return res.status(400).json({ success: false, message: 'Foto KTP dan selfie wajib diupload' })
+    }
+    await pool.query(
+      `UPDATE users SET ktp_photo = ?, selfie_photo = ?,
+       verification_status = 'pending', verified = 0,
+       rejection_note = NULL, verification_date = NULL
+       WHERE id = ?`,
+      [ktpPhoto, selfiePhoto, req.params.id]
+    )
+    // Notif ke admin
+    const [userRow] = await pool.query('SELECT name FROM users WHERE id = ?', [req.params.id])
+    const userName = userRow[0]?.name || 'User'
+    await pool.query(
+      "INSERT INTO notifications (recipient_id, type, message) VALUES ('admin-001', 'verif', ?)",
+      [`🔄 ${userName} mengajukan verifikasi ulang identitas. Silakan periksa dokumen barunya.`]
+    )
+    res.json({ success: true, message: 'Dokumen verifikasi ulang berhasil dikirim' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Server error' })
+  }
+})
 router.get('/notifications', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(

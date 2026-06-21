@@ -64,11 +64,17 @@ function HeroSection() {
 
 function CategorySection() {
   const catDetails = [
-    { id: 'fashion',    icon: '👕', label: 'Fashion',    desc: 'Baju, sepatu, tas & aksesoris',  count: 312, gradient: 'linear-gradient(135deg, #EC4899, #F43F5E)' },
-    { id: 'electronic', icon: '💻', label: 'Electronic', desc: 'Laptop, HP, gadget & elektronik', count: 189, gradient: 'linear-gradient(135deg, #10B981, #059669)' },
-    { id: 'furniture',  icon: '🪑', label: 'Furniture',  desc: 'Lemari, meja, kasur & dekorasi',  count: 124, gradient: 'linear-gradient(135deg, #7C3AED, #2563EB)' },
-    { id: 'hobi',       icon: '🎮', label: 'Hobi',       desc: 'Game, olahraga, koleksi & seni',  count: 98,  gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' },
-    { id: 'otomotif',   icon: '🏍️', label: 'Otomotif',   desc: 'Sparepart, aksesoris kendaraan',  count: 67,  gradient: 'linear-gradient(135deg, #EF4444, #DC2626)' },
+    { id: 'fashion',    icon: '👕', label: 'Fashion',              desc: 'Baju, sepatu, tas & aksesoris',       count: 312, gradient: 'linear-gradient(135deg, #EC4899, #F43F5E)' },
+    { id: 'electronic', icon: '💻', label: 'Electronic',           desc: 'Laptop, HP, gadget & elektronik',    count: 189, gradient: 'linear-gradient(135deg, #10B981, #059669)' },
+    { id: 'furniture',  icon: '🪑', label: 'Furniture',            desc: 'Lemari, meja, kasur & dekorasi',     count: 124, gradient: 'linear-gradient(135deg, #7C3AED, #2563EB)' },
+    { id: 'hobi',       icon: '🎮', label: 'Hobi',                 desc: 'Game, olahraga, koleksi & seni',     count: 98,  gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' },
+    { id: 'otomotif',   icon: '🏍️', label: 'Otomotif',             desc: 'Sparepart, aksesoris kendaraan',     count: 67,  gradient: 'linear-gradient(135deg, #EF4444, #DC2626)' },
+    { id: 'buku',       icon: '📚', label: 'Buku & Alat Tulis',    desc: 'Buku, alat tulis & perlengkapan',    count: 54,  gradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' },
+    { id: 'olahraga',   icon: '⚽', label: 'Olahraga',             desc: 'Peralatan gym, outdoor & olahraga',  count: 43,  gradient: 'linear-gradient(135deg, #059669, #047857)' },
+    { id: 'kesehatan',  icon: '🏥', label: 'Kesehatan & Kecantikan', desc: 'Skincare, alat kesehatan & vitamin', count: 38, gradient: 'linear-gradient(135deg, #F472B6, #EC4899)' },
+    { id: 'dapur',      icon: '🍳', label: 'Dapur & Perabot Rumah',desc: 'Peralatan masak & perabot rumah',     count: 35,  gradient: 'linear-gradient(135deg, #D97706, #F59E0B)' },
+    { id: 'bayi',       icon: '👶', label: 'Perlengkapan Bayi',    desc: 'Pakaian, mainan & perlengkapan bayi', count: 29, gradient: 'linear-gradient(135deg, #60A5FA, #2563EB)' },
+    { id: 'lainnya',    icon: '📦', label: 'Lainnya',              desc: 'Berbagai barang preloved lainnya',   count: 21,  gradient: 'linear-gradient(135deg, #6B7280, #374151)' },
   ]
 
   return (

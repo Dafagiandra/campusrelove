@@ -33,6 +33,7 @@ export default function Navbar() {
   const unreadNotif = user ? getUnreadCount(user.id) : 0
   const unreadChat  = user ? getUnreadChatCount(user.id) : 0
   const myNotifs    = user ? getUserNotifs(user.id).slice(0, 8) : []
+  const isPending   = user && user.role !== 'admin' && user.verificationStatus === 'pending' && !user.verified
 
   return (
     <nav className={styles.navbar}>
@@ -159,6 +160,11 @@ export default function Navbar() {
                       </div>
                     </div>
                     <div className={styles.dropdownDivider}></div>
+                    {isPending && (
+                      <div className={styles.pendingBadge}>
+                        ⏳ Menunggu Verifikasi Admin
+                      </div>
+                    )}
                     <Link to="/profile" className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setMenuOpen(false) }}>
                       👤 Profil Saya
                     </Link>

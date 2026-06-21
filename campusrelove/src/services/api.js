@@ -4,7 +4,10 @@
  * Base URL diambil dari VITE_API_URL di .env
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const BASE_URL = import.meta.env.VITE_API_URL || ''
+
+// Jika tidak ada API URL (GitHub Pages demo), return mock success
+export const isBackendAvailable = () => Boolean(BASE_URL && BASE_URL.trim() !== '')
 
 // ── Helper: fetch dengan token ────────────────────────────────────────────────
 const getToken = () => localStorage.getItem('cr_token')
@@ -70,6 +73,7 @@ export const userAPI = {
   getPendingVerif:()         => get('/users/pending-verif'),
   approve:        (id)       => put(`/users/${id}/approve`),
   reject:         (id, note) => put(`/users/${id}/reject`, { note }),
+  reverify:       (id, data) => put(`/users/${id}/reverify`, data),
   getNotifications: ()       => get('/users/notifications'),
   markRead:       (id)       => put(`/users/notifications/${id}/read`),
 }

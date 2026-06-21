@@ -107,16 +107,20 @@ export function ProductProvider({ children }) {
     )
   }
 
-  const getSellerProducts = useCallback(async (sellerId) => {
+  const getSellerProducts = (sellerId) => {
+    return allProducts.filter((p) => p.sellerId === sellerId)
+  }
+
+  // Async version for when you need fresh data from API
+  const fetchSellerProducts = async (sellerId) => {
     try {
       const data = await productAPI.getBySeller(sellerId)
       if (data.success) return data.products.map(mapProduct)
-      return []
+      return allProducts.filter((p) => p.sellerId === sellerId)
     } catch {
-      // Fallback: filter from already-loaded products
       return allProducts.filter((p) => p.sellerId === sellerId)
     }
-  }, [allProducts])
+  }
 
   return (
     <ProductContext.Provider value={{
@@ -128,6 +132,7 @@ export function ProductProvider({ children }) {
       deleteProduct,
       updateProduct,
       getSellerProducts,
+      fetchSellerProducts,
       refreshProducts: fetchProducts,
     }}>
       {children}

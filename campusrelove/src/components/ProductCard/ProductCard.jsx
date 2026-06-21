@@ -45,7 +45,13 @@ export default function ProductCard({ product }) {
     fashion:    { bg: '#FCE7F3', color: '#DB2777', label: '👕 Fashion' },
     hobi:       { bg: '#FEF3C7', color: '#D97706', label: '🎮 Hobi' },
     otomotif:   { bg: '#FEE2E2', color: '#DC2626', label: '🏍️ Otomotif' },
+    buku:       { bg: '#EDE9FE', color: '#8B5CF6', label: '📚 Buku & Alat Tulis' },
+    olahraga:   { bg: '#D1FAE5', color: '#059669', label: '⚽ Olahraga' },
+    kesehatan:  { bg: '#FCE7F3', color: '#F472B6', label: '🏥 Kesehatan' },
+    dapur:      { bg: '#FEF3C7', color: '#D97706', label: '🍳 Dapur' },
+    bayi:       { bg: '#DBEAFE', color: '#2563EB', label: '👶 Bayi' },
     academic:   { bg: '#FEF3C7', color: '#D97706', label: '📚 Lainnya' },
+    lainnya:    { bg: '#F3F4F6', color: '#6B7280', label: '📦 Lainnya' },
   }
   const cat = categoryColors[product.category] || { bg: '#F3F4F6', color: '#6B7280', label: product.category }
 

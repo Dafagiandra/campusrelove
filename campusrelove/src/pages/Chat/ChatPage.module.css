@@ -178,3 +178,287 @@
   .convName { font-size: 0.82rem; }
   .chatWindow { height: 360px; }
 }
+
+/* ── Refresh button ── */
+.refreshBtn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1rem; padding: 4px 8px; border-radius: 8px;
+  transition: background 0.15s; color: #7C3AED;
+}
+.refreshBtn:hover { background: #ede9fe; }
+
+/* ── Order status card ── */
+.orderStatusCard {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+}
+.orderStatusLeft { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.orderStatusBadge {
+  display: inline-flex; padding: 3px 10px; border-radius: 50px;
+  font-size: 0.72rem; font-weight: 700; width: fit-content;
+}
+.orderStatusProduct { font-size: 0.75rem; color: #6b7280; }
+.orderStatusMeetup  { font-size: 0.72rem; color: #7C3AED; }
+.orderStatusActions { display: flex; gap: 6px; flex-wrap: wrap; }
+.orderActionBtn {
+  padding: 6px 12px; background: linear-gradient(135deg,#7C3AED,#2563EB);
+  color: white; border: none; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.orderActionBtnGreen {
+  padding: 6px 12px; background: linear-gradient(135deg,#10B981,#059669);
+  color: white; border: none; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+
+/* ── Chat toolbar ── */
+.chatToolbar {
+  display: flex; gap: 8px; padding: 6px 16px;
+  border-top: 1px solid #f3f4f6; background: white;
+}
+.meetupPlannerBtn {
+  padding: 5px 12px; background: #faf5ff; color: #7C3AED;
+  border: 1.5px solid #c4b5fd; border-radius: 20px;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  font-family: 'Poppins', sans-serif; transition: all 0.15s;
+}
+.meetupPlannerBtn:hover { background: #ede9fe; }
+
+/* ── Meetup proposal card ── */
+.meetupProposalCard {
+  background: white; border: 2px solid #7C3AED; border-radius: 14px;
+  padding: 14px; max-width: 280px; box-shadow: 0 2px 12px rgba(124,58,237,0.12);
+}
+.meetupProposalHeader { font-size: 0.82rem; font-weight: 700; color: #7C3AED; margin-bottom: 8px; }
+.meetupProposalName { font-size: 0.9rem; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.meetupProposalBy { font-size: 0.72rem; color: #6b7280; margin-bottom: 10px; }
+.meetupProposalActions { display: flex; gap: 8px; margin-bottom: 6px; }
+.meetupProposalWaiting { font-size: 0.75rem; color: #9ca3af; text-align: center; margin-bottom: 4px; }
+.btnAccept {
+  flex: 1; padding: 7px; background: #10B981; color: white;
+  border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; font-family: 'Poppins', sans-serif;
+}
+.btnAccept:hover { background: #059669; }
+.btnReject {
+  flex: 1; padding: 7px; background: #fee2e2; color: #dc2626;
+  border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; font-family: 'Poppins', sans-serif;
+}
+.btnReject:hover { background: #fecaca; }
+
+/* ── Modal ── */
+.modalOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: white; border-radius: 20px; padding: 24px;
+  width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modalHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.modalTitle { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+.modalClose {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.1rem; color: #9ca3af; padding: 4px;
+}
+.modalClose:hover { color: #dc2626; }
+.modalDesc { font-size: 0.82rem; color: #6b7280; margin-bottom: 14px; }
+.modalPinInfo {
+  font-size: 0.82rem; color: #7C3AED; margin-bottom: 10px;
+  background: #faf5ff; padding: 8px 12px; border-radius: 8px;
+}
+.modalInput {
+  width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb;
+  border-radius: 10px; font-size: 0.88rem; font-family: 'Poppins', sans-serif;
+  outline: none; margin-bottom: 14px; box-sizing: border-box;
+}
+.modalInput:focus { border-color: #7C3AED; }
+.modalActions { display: flex; gap: 10px; }
+.btnPrimary {
+  flex: 1; padding: 11px 20px;
+  background: linear-gradient(135deg,#7C3AED,#2563EB);
+  color: white; border: none; border-radius: 12px;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif; transition: all 0.2s;
+}
+.btnPrimary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btnOutlineSmall {
+  padding: 11px 16px; background: white; color: #7C3AED;
+  border: 2px solid #7C3AED; border-radius: 12px;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+@media (max-width: 480px) {
+  .modal { padding: 18px 16px; }
+  .meetupProposalCard { max-width: 240px; }
+  .orderStatusCard { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Order Status Card ───────────────────────────────────────────────────── */
+.orderStatusCard {
+  background: linear-gradient(135deg, #f5f3ff, #eff6ff);
+  border-bottom: 1px solid #ede9fe;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.orderStatusLeft { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+.orderStatusBadge {
+  padding: 3px 10px; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 700;
+}
+.orderStatusProduct { font-size: 0.78rem; color: #374151; font-weight: 600; }
+.orderStatusMeetup  { font-size: 0.72rem; color: #6b7280; }
+.codTag { background: #d1fae5; color: #065f46; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
+.orderStatusActions { display: flex; gap: 8px; }
+.orderActionBtn {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #7C3AED, #2563EB);
+  color: white; border: none; border-radius: 8px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+.orderActionBtnGreen {
+  padding: 6px 14px;
+  background: #10B981;
+  color: white; border: none; border-radius: 8px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ── Refresh button ──────────────────────────────────────────────────────── */
+.refreshBtn {
+  background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; padding: 4px; color: #9ca3af;
+  transition: color 0.2s;
+}
+.refreshBtn:hover { color: #7C3AED; }
+
+/* ── Chat Toolbar ────────────────────────────────────────────────────────── */
+.chatToolbar {
+  padding: 6px 12px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 8px;
+  background: #fafafa;
+}
+.meetupPlannerBtn {
+  padding: 6px 14px;
+  background: #eff6ff;
+  color: #2563EB;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+}
+.meetupPlannerBtn:hover { background: #dbeafe; }
+
+/* ── Meetup Proposal Card ────────────────────────────────────────────────── */
+.meetupProposalCard {
+  background: white;
+  border: 2px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 14px;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+}
+.meetupProposalHeader {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  margin-bottom: 8px;
+}
+.meetupProposalName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+.meetupProposalBy {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+.meetupProposalActions { display: flex; gap: 8px; margin-bottom: 6px; }
+.btnAccept {
+  flex: 1; padding: 7px; background: #10B981; color: white;
+  border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; font-family: 'Poppins', sans-serif;
+}
+.btnRejectSmall {
+  flex: 1; padding: 7px; background: #fee2e2; color: #dc2626;
+  border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; font-family: 'Poppins', sans-serif;
+}
+.meetupProposalWaiting {
+  font-size: 0.75rem; color: #9ca3af; text-align: center;
+  padding: 6px; background: #f9fafb; border-radius: 6px; margin-bottom: 6px;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: white; border-radius: 20px; padding: 24px;
+  max-width: 500px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+}
+.modalHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.modalTitle { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+.modalClose {
+  background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; color: #6b7280;
+}
+.modalDesc { font-size: 0.82rem; color: #6b7280; margin-bottom: 14px; }
+.modalPinInfo {
+  font-size: 0.82rem; color: #2563EB; margin-bottom: 10px;
+  background: #eff6ff; border-radius: 8px; padding: 8px 12px;
+}
+.modalInput {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: 0.88rem; font-family: 'Poppins', sans-serif;
+  outline: none; box-sizing: border-box; margin-bottom: 14px;
+}
+.modalInput:focus { border-color: #7C3AED; }
+.modalActions { display: flex; gap: 10px; }
+.btnPrimarySmall {
+  flex: 1; padding: 11px;
+  background: linear-gradient(135deg, #7C3AED, #2563EB);
+  color: white; border: none; border-radius: 10px;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+.btnPrimarySmall:disabled { opacity: 0.5; cursor: not-allowed; }
+.btnOutlineSmall {
+  padding: 11px 20px;
+  background: white; color: #6b7280;
+  border: 2px solid #e5e7eb; border-radius: 10px;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
