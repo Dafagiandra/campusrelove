@@ -4,6 +4,8 @@ import { sellers, meetupPoints } from '../../data/products'
 import { useProducts } from '../../context/ProductContext'
 import { useAuth } from '../../context/AuthContext'
 import { useOrders } from '../../context/OrderContext'
+import { isBackendAvailable, chatAPI } from '../../services/api'
+import { getSellerTrustBadges, TRANSACTION_PROTECTION } from '../../utils/trustBadge'
 import styles from './ProductDetail.module.css'
 
 function getSellerInfo(sellerId) {
@@ -49,16 +51,36 @@ function ImageGallery({ images, title }) {
   )
 }
 
-function MeetupPlanner({ points, productTitle }) {
+function MeetupPlanner({ points, productTitle, buyerId, sellerId, productId, user }) {
   const [selected, setSelected] = useState(null)
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [confirmed, setConfirmed] = useState(false)
+  const [sending, setSending] = useState(false)
 
-  const handleConfirm = () => {
-    if (selected && date && time) {
+  const handleConfirm = async () => {
+    if (!selected || !date || !time) return
+    const point = meetupPoints.find((m) => m.id === selected)
+    setSending(true)
+    try {
+      // 1. Get or create conversation
+      let convId = null
+      if (isBackendAvailable() && buyerId && sellerId) {
+        const data = await chatAPI.getOrCreate({ buyerId, sellerId, productId, productTitle })
+        if (data.success) convId = data.conversation.id
+      }
+      // 2. Send meetup schedule as chat message
+      const msg = `📅 [MEETUP_SCHEDULE] Jadwal Meet-up:\n📍 Lokasi: ${point?.name || selected}\n📅 Tanggal: ${date}\n⏰ Waktu: ${time} WIB\n\nMohon konfirmasi penjual ya!`
+      if (convId && isBackendAvailable()) {
+        await chatAPI.sendMessage(convId, msg)
+      } else if (convId) {
+        const all = JSON.parse(localStorage.getItem('cr_chats') || '[]')
+        const idx = all.findIndex(c => c.conversationId === convId)
+        if (idx !== -1) { all[idx].messages.push({ messageId: `m${Date.now()}`, senderId: user?.id || buyerId, text: msg, sentAt: new Date().toISOString(), isRead: false }); localStorage.setItem('cr_chats', JSON.stringify(all)) }
+      }
       setConfirmed(true)
-    }
+    } catch { setConfirmed(true) /* still show confirmed even if chat fails */ }
+    setSending(false)
   }
 
   if (confirmed) {
@@ -67,16 +89,16 @@ function MeetupPlanner({ points, productTitle }) {
       <div className={styles.meetupConfirmed}>
         <div className={styles.confirmedIcon}>✅</div>
         <h3>Meet-up Terjadwal!</h3>
-        <p>
-          <strong>{point?.name}</strong><br />
-          📅 {date} pukul {time}
-        </p>
+        <p><strong>{point?.name}</strong><br />📅 {date} pukul {time} WIB</p>
         <p className={styles.confirmedNote}>
-          Penjual akan dihubungi. Pastikan kamu datang tepat waktu ya!
+          Jadwal sudah terkirim ke chat dengan penjual. Tunggu konfirmasi ya!
         </p>
-        <button className={styles.resetMeetup} onClick={() => setConfirmed(false)}>
-          Ubah Jadwal
-        </button>
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button className={styles.resetMeetup} onClick={() => setConfirmed(false)}>Ubah Jadwal</button>
+          {isBackendAvailable() && buyerId && sellerId && (
+            <Link to={`/chat`} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#7C3AED,#2563EB)', color: 'white', borderRadius: 10, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700 }}>💬 Buka Chat</Link>
+          )}
+        </div>
       </div>
     )
   }
@@ -84,23 +106,19 @@ function MeetupPlanner({ points, productTitle }) {
   return (
     <div className={styles.meetup}>
       <h3 className={styles.meetupTitle}>📍 Meet-up Planner</h3>
-      <p className={styles.meetupDesc}>Pilih titik temu aman di kampus untuk COD</p>
+      <p className={styles.meetupDesc}>Atur jadwal ketemu langsung dengan penjual untuk COD</p>
 
       <div className={styles.meetupPoints}>
         {points.map((pointId) => {
           const point = meetupPoints.find((m) => m.name === pointId)
           if (!point) return null
           return (
-            <button
-              key={point.id}
-              className={`${styles.meetupPoint} ${selected === point.id ? styles.meetupPointActive : ''}`}
-              onClick={() => setSelected(point.id)}
-            >
+            <button key={point.id} className={`${styles.meetupPoint} ${selected === point.id ? styles.meetupPointActive : ''}`} onClick={() => setSelected(point.id)}>
               <span className={styles.meetupPointIcon}>{point.icon}</span>
               <div className={styles.meetupPointInfo}>
                 <span className={styles.meetupPointName}>{point.name}</span>
                 <span className={styles.meetupPointDesc}>{point.description}</span>
-                <span className={styles.meetupPointHours}>⏰ {point.hours}</span>
+                {point.hours && <span className={styles.meetupPointHours}>⏰ {point.hours}</span>}
               </div>
               {selected === point.id && <span className={styles.meetupCheck}>✓</span>}
             </button>
@@ -111,29 +129,16 @@ function MeetupPlanner({ points, productTitle }) {
       <div className={styles.meetupDateTime}>
         <div className={styles.dateTimeField}>
           <label>📅 Tanggal</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-          />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
         </div>
         <div className={styles.dateTimeField}>
           <label>⏰ Waktu</label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-          />
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} />
         </div>
       </div>
 
-      <button
-        className={styles.meetupBtn}
-        onClick={handleConfirm}
-        disabled={!selected || !date || !time}
-      >
-        📅 Jadwalkan Meet-up
+      <button className={styles.meetupBtn} onClick={handleConfirm} disabled={!selected || !date || !time || sending}>
+        {sending ? '⏳ Mengirim...' : '📅 Jadwalkan & Kirim ke Chat Penjual'}
       </button>
     </div>
   )
@@ -141,6 +146,7 @@ function MeetupPlanner({ points, productTitle }) {
 
 function SellerProfile({ seller }) {
   const [showReviews, setShowReviews] = useState(false)
+  const trustBadges = getSellerTrustBadges(seller)
 
   return (
     <div className={styles.sellerCard}>
@@ -154,40 +160,64 @@ function SellerProfile({ seller }) {
             )}
           </div>
           <p className={styles.sellerUni}>{seller.city || seller.university || ''}</p>
-          <p className={styles.sellerAngkatan}>{seller.faculty || ''}</p>
           <div className={styles.sellerStats}>
             <div className={styles.sellerStat}>
               <StarRating rating={seller.rating} />
             </div>
             <span className={styles.sellerStatDivider}>·</span>
-            <span className={styles.sellerSales}>{seller.totalSales} terjual</span>
+            <span className={styles.sellerSales}>{seller.totalSales || 0} terjual</span>
             <span className={styles.sellerStatDivider}>·</span>
-            <span className={styles.sellerJoin}>Bergabung {new Date(seller.joinDate).getFullYear()}</span>
+            <span className={styles.sellerJoin}>Bergabung {seller.joinDate ? new Date(seller.joinDate).getFullYear() : '–'}</span>
           </div>
+
+          {/* Trust Badges */}
+          {trustBadges.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {trustBadges.map(b => (
+                <span key={b.id} title={b.desc} style={{ background: b.bg, color: b.color, border: `1px solid ${b.color}40`, borderRadius: 8, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {b.icon} {b.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <button
-        className={styles.reviewToggle}
-        onClick={() => setShowReviews(!showReviews)}
-      >
-        {showReviews ? '▲' : '▼'} {seller.reviews.length} Ulasan Mahasiswa
-      </button>
+      {seller.reviews?.length > 0 && (
+        <>
+          <button className={styles.reviewToggle} onClick={() => setShowReviews(!showReviews)}>
+            {showReviews ? '▲' : '▼'} {seller.reviews.length} Ulasan
+          </button>
+          {showReviews && (
+            <div className={styles.reviews}>
+              {seller.reviews.map((review, i) => (
+                <div key={i} className={styles.review}>
+                  <div className={styles.reviewHeader}>
+                    <span className={styles.reviewUser}>{review.user}</span>
+                    <span className={styles.reviewStars}>{'★'.repeat(review.rating)}</span>
+                    <span className={styles.reviewDate}>{review.date}</span>
+                  </div>
+                  <p className={styles.reviewComment}>{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      {showReviews && (
-        <div className={styles.reviews}>
-          {seller.reviews.map((review, i) => (
-            <div key={i} className={styles.review}>
-              <div className={styles.reviewHeader}>
-                <span className={styles.reviewUser}>{review.user}</span>
-                <span className={styles.reviewStars}>{'★'.repeat(review.rating)}</span>
-                <span className={styles.reviewDate}>{review.date}</span>
-              </div>
-              <p className={styles.reviewComment}>{review.comment}</p>
+      {/* Transaction Protection Banner */}
+      <div style={{ marginTop: 14, background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1d4ed8', marginBottom: 8 }}>
+          {TRANSACTION_PROTECTION.icon} {TRANSACTION_PROTECTION.title}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {TRANSACTION_PROTECTION.items.map((item, i) => (
+            <div key={i} style={{ fontSize: '0.75rem', color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>{item.icon}</span><span>{item.text}</span>
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -196,13 +226,14 @@ export default function ProductDetail() {
   const { id } = useParams()
   const { allProducts } = useProducts()
   const { user } = useAuth()
-  const { getOrCreateConversation, sendMessage, isProductSold } = useOrders()
+  const { isProductSold } = useOrders()
   const navigate = useNavigate()
   const product = allProducts.find((p) => p.id === id)
   const seller = product ? getSellerInfo(product.sellerId) : null
   const [chatOpen, setChatOpen] = useState(false)
   const [chatConvId, setChatConvId] = useState(null)
   const [chatMsg, setChatMsg] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
 
   // Cek apakah produk sudah terjual
   const sold = product ? isProductSold(product.id) : false
@@ -220,28 +251,44 @@ export default function ProductDetail() {
     navigate(`/checkout/${id}`)
   }
 
-  const handleChatSeller = () => {
-    if (!user) {
-      navigate('/auth', { state: { mode: 'login' } })
-      return
-    }
-    if (user.role === 'seller' && user.id === product.sellerId) {
-      alert('Ini barang kamu sendiri!')
-      return
-    }
-    // Buat/ambil conversation
-    const buyerId  = user.role === 'buyer' ? user.id : product.sellerId
-    const sellerId = product.sellerId
-    const conv = getOrCreateConversation(buyerId, sellerId, product.id, product.title)
-    setChatConvId(conv.conversationId)
-    setChatOpen(true)
+  const handleChatSeller = async () => {
+    if (!user) { navigate('/auth', { state: { mode: 'login' } }); return }
+    if (user.role === 'seller' && user.id === product.sellerId) { alert('Ini barang kamu sendiri!'); return }
+    setChatLoading(true)
+    try {
+      const buyerId  = user.role === 'buyer' ? user.id : product.sellerId
+      const sellerId = product.sellerId
+      if (isBackendAvailable()) {
+        const data = await chatAPI.getOrCreate({ buyerId, sellerId, productId: product.id, productTitle: product.title })
+        if (data.success) { setChatConvId(data.conversation.id); setChatOpen(true) }
+      } else {
+        const all = JSON.parse(localStorage.getItem('cr_chats') || '[]')
+        let conv = all.find(c => c.buyerId === buyerId && c.sellerId === sellerId && c.productId === product.id)
+        if (!conv) {
+          conv = { conversationId: `conv_${Date.now()}`, buyerId, sellerId, productId: product.id, productTitle: product.title, messages: [], createdAt: new Date().toISOString() }
+          all.push(conv); localStorage.setItem('cr_chats', JSON.stringify(all))
+        }
+        setChatConvId(conv.conversationId); setChatOpen(true)
+      }
+    } catch { /* ignore */ }
+    setChatLoading(false)
   }
 
-  const handleSendChat = () => {
+  const handleSendChat = async () => {
     if (!chatMsg.trim() || !chatConvId) return
-    sendMessage(chatConvId, user.id, chatMsg.trim())
-    setChatMsg('')
-    // Notif penjual sudah otomatis di sendMessage
+    try {
+      if (isBackendAvailable()) {
+        await chatAPI.sendMessage(chatConvId, chatMsg.trim())
+      } else {
+        const all = JSON.parse(localStorage.getItem('cr_chats') || '[]')
+        const idx = all.findIndex(c => c.conversationId === chatConvId)
+        if (idx !== -1) {
+          all[idx].messages.push({ messageId: `m${Date.now()}`, senderId: user.id, text: chatMsg.trim(), sentAt: new Date().toISOString(), isRead: false })
+          localStorage.setItem('cr_chats', JSON.stringify(all))
+        }
+      }
+      setChatMsg('')
+    } catch { /* ignore */ }
   }
 
   if (!product) {
@@ -255,7 +302,11 @@ export default function ProductDetail() {
     )
   }
 
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  // originalPrice sekarang opsional — hanya tampil jika ada dan lebih besar dari harga jual
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price
+  const discount = hasDiscount
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0
 
   const categoryColors = {
     furniture:  { bg: '#EDE9FE', color: '#7C3AED', label: '🪑 Furniture' },
@@ -309,8 +360,12 @@ export default function ProductDetail() {
               {/* Price */}
               <div className={styles.priceSection}>
                 <span className={styles.price}>Rp {product.price.toLocaleString('id-ID')}</span>
-                <span className={styles.originalPrice}>Rp {product.originalPrice.toLocaleString('id-ID')}</span>
-                <span className={styles.discountBadge}>Hemat {discount}%</span>
+                {hasDiscount && (
+                  <>
+                    <span className={styles.originalPrice}>Rp {product.originalPrice.toLocaleString('id-ID')}</span>
+                    <span className={styles.discountBadge}>Hemat {discount}%</span>
+                  </>
+                )}
               </div>
 
               {/* Condition */}
@@ -401,8 +456,17 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Meet-up Planner */}
-            <MeetupPlanner points={product.meetupPoints} productTitle={product.title} />
+            {/* Meet-up Planner — only show for buyers, pass chat context */}
+            {user && user.role !== 'admin' && product.sellerId !== user.id && (
+              <MeetupPlanner
+                points={product.meetupPoints || []}
+                productTitle={product.title}
+                buyerId={user.role === 'buyer' ? user.id : null}
+                sellerId={product.sellerId}
+                productId={product.id}
+                user={user}
+              />
+            )}
 
             {/* Seller Profile */}
             {seller && <SellerProfile seller={seller} />}

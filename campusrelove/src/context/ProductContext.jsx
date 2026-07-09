@@ -25,6 +25,9 @@ const mapProduct = (p) => ({
   postedDate:    p.created_at ? p.created_at.split('T')[0] : (p.postedDate || ''),
   stock:         p.stock ?? 1,
   meetupPoints:  parseJSON(p.meetupPoints, ['Mall Terdekat', 'Stasiun', 'Kampus']),
+  listingExpiresAt: p.listing_expires_at ?? p.listingExpiresAt ?? null,
+  listingStatus:    p.listing_status     ?? p.listingStatus     ?? 'active',
+  isFreeListings:   Boolean(p.is_free_listing ?? p.isFreeListings),
 })
 
 function parseJSON(value, fallback) {
@@ -83,7 +86,11 @@ export function ProductProvider({ children }) {
       if (data.success) {
         const mapped = mapProduct(data.product)
         setAllProducts((prev) => [mapped, ...prev])
-        return mapped
+        return { ...mapped, isFree: data.isFree }
+      }
+      // Handle requiresPayment (HTTP 402)
+      if (data.requiresPayment) {
+        throw { requiresPayment: true, fee: data.fee, duration: data.duration, category: data.category, message: data.message }
       }
       throw new Error(data.message || 'Gagal menambah produk')
     } catch (err) {
@@ -111,15 +118,29 @@ export function ProductProvider({ children }) {
     return allProducts.filter((p) => p.sellerId === sellerId)
   }
 
-  // Async version for when you need fresh data from API
-  const fetchSellerProducts = async (sellerId) => {
+  // Async version for when you need fresh data from API (including sold products)
+  const fetchSellerProducts = async (sellerId, includeSold = true) => {
     try {
-      const data = await productAPI.getBySeller(sellerId)
+      const data = await productAPI.getBySeller(sellerId, includeSold)
       if (data.success) return data.products.map(mapProduct)
       return allProducts.filter((p) => p.sellerId === sellerId)
     } catch {
       return allProducts.filter((p) => p.sellerId === sellerId)
     }
+  }
+
+  // Fetch a single product by ID directly from API (bypasses allProducts filter)
+  // Use this for order history etc. where sold products must still be accessible
+  const getProductById = async (id) => {
+    // First check allProducts (for available products — fast path)
+    const cached = allProducts.find((p) => p.id === id)
+    if (cached) return cached
+    // Not found in cache (possibly sold) — fetch from API
+    try {
+      const data = await productAPI.getById(id)
+      if (data.success) return mapProduct(data.product)
+    } catch { /* ignore */ }
+    return null
   }
 
   return (
@@ -133,6 +154,7 @@ export function ProductProvider({ children }) {
       updateProduct,
       getSellerProducts,
       fetchSellerProducts,
+      getProductById,
       refreshProducts: fetchProducts,
     }}>
       {children}

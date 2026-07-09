@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import { orderAPI, userAPI } from '../services/api'
+import { orderAPI, userAPI, chatAPI, isBackendAvailable } from '../services/api'
 import { useAuth } from './AuthContext'
 
 const OrderContext = createContext(null)
 
 const CHATS_KEY        = 'cr_chats'
 const ADMIN_WALLET_KEY = 'cr_admin_wallet'
-const PLATFORM_FEE_PERCENT = 2
+const PLATFORM_FEE_PERCENT = 0  // Pemasukan dari biaya listing, bukan komisi transaksi
 
 const loadLS  = (key, fallback = []) => {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) }
@@ -35,6 +35,7 @@ const mapOrder = (o) => ({
   status:             o.status,
   meetupPoint:        o.meetup_point  ?? o.meetupPoint  ?? null,
   paymentMethod:      o.payment_method ?? o.paymentMethod ?? 'transfer_escrow',
+  isOfflinePayment:   Boolean(o.is_offline_payment ?? o.isOfflinePayment ?? false),
   resi:               o.resi          ?? null,
   codSchedule:        o.cod_schedule  ?? o.codSchedule  ?? null,
   cancelReason:       o.cancel_reason ?? o.cancelReason ?? null,
@@ -112,45 +113,39 @@ export function OrderProvider({ children }) {
 
   // ── ORDER ACTIONS ──────────────────────────────────────────────────────────
 
-  const createOrder = async ({ buyerId, buyerName, sellerId, productId, productTitle, price, meetupPoint, paymentMethod }) => {
+  const createOrder = async ({ buyerId, buyerName, sellerId, productId, productTitle, price, meetupPoint, paymentMethod, isOfflinePayment }) => {
     try {
       const data = await orderAPI.create({
         productId,
         meetupPoint: meetupPoint || null,
         paymentMethod: paymentMethod || 'transfer_escrow',
+        isOfflinePayment: Boolean(isOfflinePayment),
       })
       if (data.success) {
-        const mapped = { ...mapOrder(data.order), paymentMethod: paymentMethod || 'transfer_escrow' }
+        const mapped = {
+          ...mapOrder(data.order),
+          paymentMethod: paymentMethod || 'transfer_escrow',
+          isOfflinePayment: Boolean(isOfflinePayment),
+        }
         setOrders(prev => [mapped, ...prev])
         await fetchNotifications()
 
-        // ── Auto-create conversation between buyer and seller ──────────────
-        const current = loadLS(CHATS_KEY)
-        const existing = current.find(c =>
-          c.buyerId === buyerId && c.sellerId === sellerId && c.productId === productId
-        )
-        if (!existing) {
-          // Get names for both parties from stored users
-          const storedUsers = (() => { try { return JSON.parse(localStorage.getItem('cr_users') || '[]') } catch { return [] } })()
-          const buyerUser  = storedUsers.find(u => u.id === buyerId)
-          const sellerUser = storedUsers.find(u => u.id === sellerId)
-
-          const conv = {
-            conversationId: `conv_${Date.now()}`,
-            buyerId, sellerId, productId, productTitle,
-            buyerName:  buyerUser?.name  || buyerName || 'Pembeli',
-            sellerName: sellerUser?.name || 'Penjual',
-            messages: [{
-              messageId: `m${Date.now()}`,
-              senderId:  'system',
-              text:      `🛍️ Pesanan dibuat untuk "${productTitle}" — Rp ${price.toLocaleString('id-ID')}. Gunakan chat ini untuk koordinasi titik temu dan konfirmasi.`,
-              sentAt:    new Date().toISOString(),
-              isRead:    false,
-            }],
-            createdAt: new Date().toISOString(),
+        // ── Auto-create conversation via API ─────────────────────────────────
+        try {
+          if (isBackendAvailable()) {
+            await chatAPI.getOrCreate({ buyerId, sellerId, productId, productTitle })
+          } else {
+            const current = loadLS(CHATS_KEY)
+            const existing = current.find(c => c.buyerId === buyerId && c.sellerId === sellerId && c.productId === productId)
+            if (!existing) {
+              const storedUsers = (() => { try { return JSON.parse(localStorage.getItem('cr_users') || '[]') } catch { return [] } })()
+              const buyerUser  = storedUsers.find(u => u.id === buyerId)
+              const sellerUser = storedUsers.find(u => u.id === sellerId)
+              const conv = { conversationId: `conv_${Date.now()}`, buyerId, sellerId, productId, productTitle, buyerName: buyerUser?.name || buyerName || 'Pembeli', sellerName: sellerUser?.name || 'Penjual', messages: [{ messageId: `m${Date.now()}`, senderId: 'system', text: `🛍️ Pesanan dibuat untuk "${productTitle}" — Rp ${price.toLocaleString('id-ID')}.`, sentAt: new Date().toISOString(), isRead: false }], createdAt: new Date().toISOString() }
+              persistChats([conv, ...current])
+            }
           }
-          persistChats([conv, ...current])
-        }
+        } catch { /* ignore */ }
 
         return mapped
       }
@@ -232,6 +227,14 @@ export function OrderProvider({ children }) {
     setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, meetupPoint } : o))
   }
 
+  const submitComplaint = async (orderId, reason, description) => {
+    try {
+      await orderAPI.complain(orderId, { reason, description })
+      await fetchNotifications()
+      return true
+    } catch (err) { throw err }
+  }
+
   const cancelOrder = async (orderId, reason, cancelledBy = 'buyer') => {
     try {
       await orderAPI.cancel(orderId, reason)
@@ -311,6 +314,23 @@ export function OrderProvider({ children }) {
     current[idx].messages.push(msg)
     current[idx].lastMessageAt = msg.sentAt
     persistChats(current)
+
+    // ── Analisis pesan & tambah pengingat halus ────────────────────────────
+    const lc = text.toLowerCase()
+    const hasPhone     = /(\b08\d{8,11}\b|\+62\d{8,11}\b|08[0-9]{8,11})/i.test(text)
+    const hasPlatform  = /(whatsapp|wa\.me|telegram|instagram|tiktok|facebook|line|wa\s|tele\s|ig\s|\bfb\b|shopee|tokopedia)/i.test(lc)
+    const hasMeetup    = /(ketemu|janjian|ketemuan|jemput|antar|cod|titik temu|lokasi|jam berapa|ketemunya|kesini|kesana)/i.test(lc)
+
+    if ((hasPhone || hasPlatform) && senderId !== 'system') {
+      setTimeout(() => {
+        addSystemChatMsg(conversationId, '🔔 Untuk keamanan transaksi, kami menyarankan semua komunikasi tetap di dalam aplikasi. Nomor HP & kontak platform lain tidak perlu dibagikan di sini.')
+      }, 300)
+    } else if (hasMeetup && senderId !== 'system') {
+      setTimeout(() => {
+        addSystemChatMsg(conversationId, '📋 Pengingat: Pastikan pembayaran sudah diselesaikan lewat sistem aplikasi sebelum bertemu. Ini melindungi kamu dan penjual jika ada masalah.')
+      }, 300)
+    }
+
     return msg
   }
 
@@ -349,8 +369,10 @@ export function OrderProvider({ children }) {
   const isProductSold = (productId) =>
     orders.some(o => o.productId === productId && ['paid','processing','shipped','delivered','completed'].includes(o.status))
 
+  const isEscrowFlow = (pm) => pm === 'transfer_escrow' || pm === 'cod_escrow'
+
   const getEscrowBalance = () =>
-    orders.filter(o => ['paid','processing','shipped'].includes(o.status) && o.paymentMethod !== 'cod')
+    orders.filter(o => ['paid','processing','shipped'].includes(o.status) && isEscrowFlow(o.paymentMethod))
       .reduce((sum, o) => sum + (o.price || 0), 0)
 
   const getAdminWalletBalance = () => loadLS(ADMIN_WALLET_KEY, { balance: 0 }).balance || 0
@@ -361,7 +383,7 @@ export function OrderProvider({ children }) {
       orders, notifications, chats,
       PLATFORM_FEE_PERCENT, calcFundSplit,
       createOrder, confirmPayment, rejectPayment,
-      processOrder, rejectOrder, shipOrder, cancelOrder,
+      processOrder, rejectOrder, shipOrder, cancelOrder, submitComplaint,
       confirmDelivery, releaseFund, confirmCOD, updateOrderMeetup,
       addNotif, markNotifRead, markAllRead,
       getUserNotifs, getUnreadCount,

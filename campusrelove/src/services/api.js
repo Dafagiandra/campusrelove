@@ -23,6 +23,16 @@ const request = async (method, endpoint, body = null) => {
   const res = await fetch(`${BASE_URL}${endpoint}`, config)
   const data = await res.json()
 
+  // Handle 402 Payment Required (listing fee)
+  if (res.status === 402 && data.requiresPayment) {
+    const payErr = new Error(data.message || 'Biaya listing diperlukan')
+    payErr.requiresPayment = true
+    payErr.fee      = data.fee
+    payErr.duration = data.duration || 30
+    payErr.category = data.category
+    throw payErr
+  }
+
   if (!res.ok) {
     throw new Error(data.message || `HTTP error ${res.status}`)
   }
@@ -44,27 +54,30 @@ export const authAPI = {
 
 // ── Products ──────────────────────────────────────────────────────────────────
 export const productAPI = {
-  getAll:     (params = {}) => {
+  getAll:      (params = {}) => {
     const qs = new URLSearchParams(params).toString()
     return get(`/products${qs ? '?' + qs : ''}`)
   },
-  getById:    (id)    => get(`/products/${id}`),
-  getBySeller:(id)    => get(`/products/seller/${id}`),
-  create:     (data)  => post('/products', data),
-  delete:     (id)    => del(`/products/${id}`),
+  getById:     (id)    => get(`/products/${id}`),
+  getBySeller: (id, includeSold = false) => get(`/products/seller/${id}${includeSold ? '?includeSold=true' : ''}`),
+  create:      (data)  => post('/products', data),
+  delete:      (id)    => del(`/products/${id}`),
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const orderAPI = {
-  create:          (data)        => post('/orders', data),
-  getMy:           ()            => get('/orders/my'),
-  getAll:          ()            => get('/orders/all'),
-  confirmPayment:  (id)          => put(`/orders/${id}/confirm-payment`),
-  process:         (id)          => put(`/orders/${id}/process`),
-  ship:            (id, data)    => put(`/orders/${id}/ship`, data),
-  confirmDelivery: (id)          => put(`/orders/${id}/confirm-delivery`),
-  cancel:          (id, reason)  => put(`/orders/${id}/cancel`, { reason }),
-  reject:          (id, reason)  => put(`/orders/${id}/cancel`, { reason, cancelledBy: 'seller' }),
+  create:           (data)        => post('/orders', data),
+  getMy:            ()            => get('/orders/my'),
+  getAll:           ()            => get('/orders/all'),
+  confirmPayment:   (id)          => put(`/orders/${id}/confirm-payment`),
+  process:          (id)          => put(`/orders/${id}/process`),
+  ship:             (id, data)    => put(`/orders/${id}/ship`, data),
+  confirmDelivery:  (id)          => put(`/orders/${id}/confirm-delivery`),
+  cancel:           (id, reason)  => put(`/orders/${id}/cancel`, { reason }),
+  reject:           (id, reason)  => put(`/orders/${id}/cancel`, { reason, cancelledBy: 'seller' }),
+  complain:         (id, data)    => post(`/orders/${id}/complain`, data),
+  getAllComplaints:  ()            => get('/orders/complaints/all'),
+  resolveComplaint: (id, data)    => put(`/orders/complaints/${id}/resolve`, data),
 }
 
 // ── Users / Admin ─────────────────────────────────────────────────────────────
@@ -78,7 +91,42 @@ export const userAPI = {
   markRead:       (id)       => put(`/users/notifications/${id}/read`),
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────────
+export const chatAPI = {
+  getConversations:  ()                      => get('/chat/conversations'),
+  getOrCreate:       (data)                  => post('/chat/conversations', data),
+  getMessages:       (convId)                => get(`/chat/conversations/${convId}/messages`),
+  sendMessage:       (convId, text)          => post(`/chat/conversations/${convId}/messages`, { text }),
+  getUnreadCount:    ()                      => get('/chat/unread-count'),
+  sendSystemMessage: (convId, text)          => post('/chat/system-message', { conversationId: convId, text }),
+}
+
+// ── Listing Fees ──────────────────────────────────────────────────────────────
+export const listingAPI = {
+  getFees:        ()                    => get('/listing/fees'),
+  getFeeFor:      (category)            => get(`/listing/fee-for/${category}`),
+  getQuota:       ()                    => get('/listing/quota'),
+  submitPayment:  (data)                => post('/listing/pay', data),
+  renewListing:   (productId)           => post(`/listing/renew/${productId}`),
+  checkExpiry:    ()                    => post('/listing/check-expiry', {}),
+  // Admin
+  updateFee:      (category, data)      => put(`/listing/fees/${category}`, data),
+  getAllPayments:  ()                    => get('/listing/payments'),
+  confirmPayment: (id)                  => put(`/listing/pay/${id}/confirm`),
+  rejectPayment:  (id, note)            => put(`/listing/pay/${id}/reject`, { note }),
+}
+
+// ── Withdrawals ───────────────────────────────────────────────────────────────
+export const withdrawalAPI = {
+  getMy:     ()           => get('/withdrawals/my'),
+  request:   (data)       => post('/withdrawals', data),
+  // Admin
+  getAll:    ()           => get('/withdrawals/all'),
+  complete:  (id)         => put(`/withdrawals/${id}/complete`),
+  reject:    (id, reason) => put(`/withdrawals/${id}/reject`, { reason }),
+}
+
 // ── Health Check ──────────────────────────────────────────────────────────────
 export const checkHealth = () => get('/health')
 
-export default { authAPI, productAPI, orderAPI, userAPI, checkHealth }
+export default { authAPI, productAPI, orderAPI, userAPI, listingAPI, checkHealth }

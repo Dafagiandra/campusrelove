@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useOrders } from '../../context/OrderContext'
 import { useProducts } from '../../context/ProductContext'
+import { getSellerTrustBadges } from '../../utils/trustBadge'
 import styles from './ProfilePage.module.css'
 
 // ── Avatar Upload ─────────────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ function SellerProfile({ user, onSave }) {
   const { getOrdersBySeller } = useOrders()
   const myProducts = allProducts.filter(p => p.sellerId === user.id)
   const completedOrders = getOrdersBySeller(user.id).filter(o => o.status === 'completed')
+  const trustBadges = getSellerTrustBadges(user)
 
   const reviews = user.reviews || []
   const avgRating = reviews.length > 0
@@ -138,6 +140,18 @@ function SellerProfile({ user, onSave }) {
               <strong>Rp {(user.balance || 0).toLocaleString('id-ID')}</strong><span>Saldo</span>
             </div>
           </div>
+
+          {/* Trust Badges */}
+          {trustBadges.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+              {trustBadges.map(b => (
+                <span key={b.id} title={b.desc}
+                  style={{ background: b.bg, color: b.color, border: `1px solid ${b.color}40`, borderRadius: 8, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {b.icon} {b.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

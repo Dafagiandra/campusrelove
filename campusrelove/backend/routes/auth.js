@@ -32,11 +32,13 @@ router.post('/register', async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO users (name, email, password, role, city, phone, avatar,
-        ktp_photo, selfie_photo, verification_status, join_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURDATE())`,
+        ktp_photo, selfie_photo, verification_status, verified, join_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())`,
       [name, email.toLowerCase(), hashedPassword, role,
        city || null, phone || null, avatar,
-       ktpPhoto || null, selfiePhoto || null]
+       null, null,  // KTP/selfie hanya untuk penjual via /api/kyc/submit
+       role === 'buyer' ? 'approved' : 'pending',  // buyer langsung aktif
+       role === 'buyer' ? 1 : 0]
     )
 
     const [user] = await pool.query(

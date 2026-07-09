@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { sellers } from '../../data/products'
 import { useOrders } from '../../context/OrderContext'
+import { getSellerTrustBadges } from '../../utils/trustBadge'
 import styles from './ProductCard.module.css'
 
 // Get seller info: first check static sellers, then localStorage users
@@ -35,7 +36,10 @@ export default function ProductCard({ product }) {
   const { isProductSold } = useOrders()
   const seller = getSellerInfo(product.sellerId)
   const sold = isProductSold(product.id)
-  const discount = product.originalPrice > product.price
+  const trustBadges = getSellerTrustBadges(seller)
+  // Show max 1 top badge on card (space-saving)
+  const topBadge = trustBadges.find(b => b.id === 'top_seller') || trustBadges.find(b => b.id === 'trusted_seller') || trustBadges.find(b => b.id === 'verified_id') || null
+  const discount = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0
 
@@ -119,7 +123,7 @@ export default function ProductCard({ product }) {
 
         <div className={styles.priceRow}>
           <span className={styles.price}>Rp {product.price.toLocaleString('id-ID')}</span>
-          {product.originalPrice > product.price && (
+          {product.originalPrice && product.originalPrice > product.price && (
             <span className={styles.originalPrice}>Rp {product.originalPrice.toLocaleString('id-ID')}</span>
           )}
         </div>
@@ -130,9 +134,7 @@ export default function ProductCard({ product }) {
               src={avatarSrc}
               alt={seller.name}
               className={styles.avatar}
-              onError={(e) => {
-                e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=fallback`
-              }}
+              onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=fallback` }}
             />
             <div className={styles.sellerInfo}>
               <span className={styles.sellerName}>
@@ -141,6 +143,11 @@ export default function ProductCard({ product }) {
               </span>
               <StarRating rating={seller.rating} />
             </div>
+            {topBadge && (
+              <span style={{ marginLeft: 'auto', background: topBadge.bg, color: topBadge.color, border: `1px solid ${topBadge.color}40`, borderRadius: 6, padding: '2px 7px', fontSize: '0.65rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                {topBadge.icon} {topBadge.label}
+              </span>
+            )}
           </div>
         )}
       </div>

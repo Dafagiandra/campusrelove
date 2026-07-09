@@ -136,9 +136,11 @@ export function AuthProvider({ children }) {
         id: `u${Date.now()}`, name, email, password, role,
         city: city || '', phone: phone || '',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
-        balance: 0, rating: 0, totalSales: 0, verified: false,
-        verificationStatus: 'pending',
-        ktpPhoto: ktpPhoto || null, selfiePhoto: selfiePhoto || null,
+        balance: 0, rating: 0, totalSales: 0,
+        // Buyer: auto-approved (OTP only). Seller: pending until KYC.
+        verified: role === 'buyer' ? true : false,
+        verificationStatus: role === 'buyer' ? 'approved' : 'pending',
+        ktpPhoto: null, selfiePhoto: null,
         joinDate: new Date().toISOString().split('T')[0],
       }
       users.push(newUser)

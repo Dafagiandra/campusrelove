@@ -1,17 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useOrders } from '../../context/OrderContext'
+import { chatAPI, isBackendAvailable } from '../../services/api'
 import styles from './Navbar.module.css'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [chatUnread, setChatUnread] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const { getUserNotifs, getUnreadCount, getUnreadChatCount, markNotifRead, markAllRead } = useOrders()
+  const { getUserNotifs, getUnreadCount, markNotifRead, markAllRead } = useOrders()
+
+  // Poll chat unread count from database every 8 seconds
+  useEffect(() => {
+    if (!user || user.role === 'admin') return
+    const fetchUnread = async () => {
+      try {
+        if (isBackendAvailable()) {
+          const data = await chatAPI.getUnreadCount()
+          if (data.success) setChatUnread(Number(data.count) || 0)
+        }
+      } catch { /* ignore */ }
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 8000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -31,7 +49,6 @@ export default function Navbar() {
   }
 
   const unreadNotif = user ? getUnreadCount(user.id) : 0
-  const unreadChat  = user ? getUnreadChatCount(user.id) : 0
   const myNotifs    = user ? getUserNotifs(user.id).slice(0, 8) : []
   const isPending   = user && user.role !== 'admin' && user.verificationStatus === 'pending' && !user.verified
 
@@ -86,7 +103,7 @@ export default function Navbar() {
               {user.role !== 'admin' && (
                 <Link to="/chat" className={styles.iconBtn} title="Pesan">
                   💬
-                  {unreadChat > 0 && <span className={styles.iconBadge}>{unreadChat}</span>}
+                  {chatUnread > 0 && <span className={styles.iconBadge}>{chatUnread}</span>}
                 </Link>
               )}
 
