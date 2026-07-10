@@ -1,0 +1,8 @@
+campusrelove/node_modules
+campusrelove/backend/node_modules
+campusrelove/dist
+campusrelove/backend/.env
+campusrelove/backend/.env.*
+campusrelove/backend/database/preloved_dump.sql
+*.log
+.git
